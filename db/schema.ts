@@ -8,5 +8,9 @@
  *
  * No se editan a mano: para extenderlas se configura en `lib/auth.ts`
  * (plugins, campos adicionales) y se regenera.
+ *
+ * Las tablas propias viven en archivos por módulo (`profile-schema.ts`, …)
+ * y se re-exportan desde acá para Drizzle Kit.
  */
 export * from "./auth-schema";
+export * from "./profile-schema";

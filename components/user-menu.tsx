@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,20 +14,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UserAvatar } from "@/components/user-avatar";
 import { authClient } from "@/lib/auth-client";
 import type { SessionUser } from "@/lib/session";
 import { es } from "@/messages/es";
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) {
-    return "?";
-  }
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 export function UserMenu({ user }: { user: SessionUser }) {
   const router = useRouter();
@@ -44,10 +33,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="lg" className="px-2" aria-label={es.auth.menu.open}>
-          <Avatar className="size-7">
-            {user.image ? <AvatarImage src={user.image} alt="" /> : null}
-            <AvatarFallback>{initials(user.name)}</AvatarFallback>
-          </Avatar>
+          <UserAvatar name={user.name} image={user.image} className="size-7" />
           <span className="max-w-32 truncate">{user.name}</span>
         </Button>
       </DropdownMenuTrigger>

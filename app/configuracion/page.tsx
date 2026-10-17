@@ -13,6 +13,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChangePasswordForm } from "@/features/auth/components/change-password-form";
 import { ResendVerificationButton } from "@/features/auth/components/resend-verification-button";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import {
+  isCraft,
+  isSkillLevel,
+  type Craft,
+  type SkillLevel,
+} from "@/features/profile/constants";
+import { isCountryCode } from "@/features/profile/countries";
+import {
+  ProfileForm,
+  type ProfileFormInitial,
+} from "@/features/profile/components/profile-form";
+import { getProfileByUserId } from "@/features/profile/queries";
+import { instagramHandleFromUrl } from "@/features/profile/schemas";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
@@ -39,9 +52,41 @@ export default function SettingsPage() {
 
 async function AccountContent() {
   const user = await requireUser();
+  const profile = await getProfileByUserId(user.id);
+
+  const craftList: Craft[] = (profile?.crafts ?? []).filter(isCraft);
+  const skillLevel: SkillLevel | "" =
+    profile?.skillLevel && isSkillLevel(profile.skillLevel)
+      ? profile.skillLevel
+      : "";
+  const initial: ProfileFormInitial = {
+    bio: profile?.bio ?? "",
+    location: profile?.location ?? "",
+    country:
+      profile?.country && isCountryCode(profile.country)
+        ? profile.country
+        : "",
+    crafts: craftList,
+    skillLevel,
+    instagram: instagramHandleFromUrl(
+      profile?.links.find((link) => link.kind === "instagram")?.url ?? "",
+    ),
+    website: profile?.links.find((link) => link.kind === "web")?.url ?? "",
+    visibility: profile?.defaultVisibility ?? "publico",
+  };
 
   return (
     <div className="flex flex-col gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{es.profile.sectionTitle}</CardTitle>
+          <CardDescription>{es.profile.sectionBody}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfileForm username={user.username} initial={initial} />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">

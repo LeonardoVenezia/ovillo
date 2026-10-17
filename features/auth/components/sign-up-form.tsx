@@ -117,7 +117,7 @@ export function SignUpForm() {
         return;
       }
       toast.success(es.auth.signUp.welcomeToast);
-      router.push("/mi-tejido");
+      router.push("/bienvenida");
       router.refresh();
     } catch (caught) {
       setFormError(mapAuthError(caught));
