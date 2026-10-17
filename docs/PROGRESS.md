@@ -54,13 +54,14 @@ Hecho (código completo, probado localmente contra Neon):
 - **Calidad**: typecheck + lint + **36 tests** en verde; `pnpm build` verificado **sin `.env.local`** (build/CI sin secretos). Prueba de humo real contra Neon: registro, sesión, ingreso por @usuario, página privada con y sin cookie, reenvío de verificación, cierre de sesión; la cuenta de prueba se borró al terminar.
 
 Pendiente para cerrar la fase:
-- [ ] **Dueño**: crear la `RESEND_API_KEY` en Resend (API Keys → Create) y pasarla; cargar en Vercel (Settings → Environment Variables, los 3 entornos): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY`, `EMAIL_FROM`.
-- [ ] Push a `main` y verificación del deploy (recién cuando Vercel tenga las variables: el sitio las necesita en runtime).
-- [ ] Probar registro y verificación de email reales desde el navegador.
+- [x] **Dueño**: variables en Vercel cargadas (los 3 entornos): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY`, `EMAIL_FROM`.
+- [x] Push a `main`, CI en verde y deploy verificado en producción: registro, sesión, `/mi-tejido` con y sin cookie (307 al ingreso), `/configuracion` y páginas públicas. La cuenta de prueba se borró al terminar. Resend quedó en modo de prueba (solo entrega a la casilla del dueño).
+- [ ] Probar el flujo completo desde el navegador: registro con el email del dueño, llegar el mail, confirmar y verificarlo en el sitio.
 - [ ] Onboarding de bienvenida (`/bienvenida`, 3 pasos) y perfil público (`/@usuario`).
 - [ ] Avatar con subida a Cloudflare R2 (requiere tarjeta en Cloudflare → pedir OK al dueño) — sin R2, hoy se muestran iniciales.
 - [ ] Tests e2e de auth (Playwright).
 - [ ] Google OAuth (pospuesto) y decisión de dominio.
+- [ ] Opcional: pegar la `RESEND_API_KEY` también en `.env.local` para que los mails salgan desde la máquina local (sin ella, se registran en consola).
 
 Notas:
 - Por ahora dev y producción comparten la misma base Neon (D-021); antes del registro público hace falta una rama de desarrollo.
