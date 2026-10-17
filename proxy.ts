@@ -8,13 +8,25 @@ import { getEnv } from "@/lib/env";
 /**
  * Middleware de rutas (spec §5.1: "rutas privadas protegidas en servidor").
  *
- * - Perfiles `/@usuario`: chequea que la cuenta exista y, si no, reescribe a
- *   la ruta de 404. Hace falta acá porque el caparazón PPR de la ruta
- *   dinámica se sirve con estado 200 y `notFound()` ya no puede cambiarlo
- *   (ver D-023). Ante errores de base se deja pasar: la página decide.
+ * - Perfiles `/@usuario` y proyectos `/@usuario/proyectos/slug`: chequea que
+ *   existan y, si no, reescribe a la ruta de 404. Hace falta acá porque el
+ *   caparazón PPR de las rutas dinámicas se sirve con estado 200 y
+ *   `notFound()` ya no puede cambiarlo (ver D-023 y D-031). Ante errores de
+ *   base se deja pasar: la página decide.
  * - Rutas privadas: redirección optimista si falta la cookie de sesión; la
  *   validación real (contra la base) la hace cada página con `requireUser()`.
  */
+
+/** Ruta canónica del proyecto público (con arroba; sin ella no se chequea). */
+const PROJECT_PATH_PATTERN = /^\/@([^/]+)\/proyectos\/([^/]+)$/;
+
+function decodeSegment(raw: string): string | null {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+}
 
 async function usernameExists(username: string): Promise<boolean> {
   try {
@@ -27,17 +39,44 @@ async function usernameExists(username: string): Promise<boolean> {
   }
 }
 
+async function projectExists(username: string, slug: string): Promise<boolean> {
+  try {
+    const sql = neon(getEnv().DATABASE_URL);
+    const rows: unknown[] =
+      await sql`select 1 from project p join "user" u on u.id = p.user_id where u.username = ${username} and p.slug = ${slug} and p.deleted_at is null limit 1`;
+    return rows.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const projectMatch = pathname.match(PROJECT_PATH_PATTERN);
+  if (projectMatch) {
+    const username = decodeSegment(projectMatch[1])?.trim().toLowerCase() ?? "";
+    const slug = decodeSegment(projectMatch[2])?.trim() ?? "";
+
+    if (
+      !USERNAME_PATTERN.test(username) ||
+      slug.length === 0 ||
+      !(await projectExists(username, slug))
+    ) {
+      return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+    }
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith("/@")) {
-    let username = "";
-    try {
-      username = decodeURIComponent(pathname.slice(2)).trim().toLowerCase();
-    } catch {
-      username = "";
+    const rest = pathname.slice(2);
+    // Rutas profundas que no son de proyecto (ej. `/@usuario/proyectos`):
+    // que decida el router.
+    if (rest.includes("/")) {
+      return NextResponse.next();
     }
 
+    const username = decodeSegment(rest)?.trim().toLowerCase() ?? "";
     if (!USERNAME_PATTERN.test(username) || !(await usernameExists(username))) {
       return NextResponse.rewrite(new URL("/no-encontrado", request.url));
     }
@@ -74,5 +113,6 @@ export const config = {
     "/configuracion/:path*",
     "/bienvenida",
     "/:username",
+    "/:username/proyectos/:slug",
   ],
 };

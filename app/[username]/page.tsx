@@ -8,6 +8,7 @@ import {
   getPublicProfileByUsername,
   type PublicProfile,
 } from "@/features/profile/queries";
+import { ProfileProjects } from "@/features/projects/components/profile-projects";
 import { getOptionalUser } from "@/lib/session";
 
 /**
@@ -65,6 +66,9 @@ export default async function UserProfilePage({ params }: Props) {
       <Suspense fallback={<ProfileCard data={data} isOwner={false} />}>
         <OwnerProfileCard data={data} />
       </Suspense>
+      <Suspense fallback={null}>
+        <ProfileProjectsSection data={data} />
+      </Suspense>
     </section>
   );
 }
@@ -72,4 +76,21 @@ export default async function UserProfilePage({ params }: Props) {
 async function OwnerProfileCard({ data }: { data: PublicProfile }) {
   const viewer = await getOptionalUser();
   return <ProfileCard data={data} isOwner={viewer?.id === data.user.id} />;
+}
+
+/**
+ * La sección de proyectos respeta la misma regla que la tarjeta: en perfiles
+ * privados solo la ve su dueña. Sin @usuario no hay URLs públicas que armar.
+ */
+async function ProfileProjectsSection({ data }: { data: PublicProfile }) {
+  const viewer = await getOptionalUser();
+  const isOwner = viewer?.id === data.user.id;
+  const detailsVisible =
+    !data.profile || data.profile.defaultVisibility !== "privado" || isOwner;
+  if (!detailsVisible || !data.user.username) {
+    return null;
+  }
+  return (
+    <ProfileProjects userId={data.user.id} username={data.user.username} />
+  );
 }

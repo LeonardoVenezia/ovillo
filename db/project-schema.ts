@@ -1,0 +1,91 @@
+import { createId } from "@paralleldrive/cuid2";
+import { relations, sql } from "drizzle-orm";
+import {
+  date,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+
+import { user } from "./auth-schema";
+import type { ProfileVisibility } from "./profile-schema";
+
+/**
+ * Proyectos (spec §5.3 y tabla `project` de §6).
+ *
+ * El corazón de Ovillo: cada proyecto guarda qué se teje, en qué estado está
+ * y todos los detalles opcionales. El borrado es lógico (`deleted_at`) y el
+ * slug es único por persona, porque la URL pública es `/@usuario/proyectos/x`.
+ *
+ * Las fotos, el diario y los contadores llegan en los próximos tramos de la
+ * fase: por eso todavía no tienen tablas propias.
+ */
+
+export const PROJECT_STATUSES = [
+  "tejiendo",
+  "en-pausa",
+  "terminado",
+  "frogueado",
+] as const;
+
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+export function isProjectStatus(value: string): value is ProjectStatus {
+  return (PROJECT_STATUSES as readonly string[]).includes(value);
+}
+
+export const project = pgTable(
+  "project",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** Slug único por persona; cambia nunca (la URL queda estable). */
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    /** Técnica como slug en español (mismo vocabulario que el perfil). */
+    craft: text("craft"),
+    status: text("status").$type<ProjectStatus>().notNull().default("tejiendo"),
+    /** Progreso manual 0–100 (spec §5.3); `null` = sin barrita. */
+    progress: integer("progress"),
+    /** Patrón como texto libre o enlace hasta que exista la biblioteca. */
+    patternText: text("pattern_text"),
+    size: text("size"),
+    madeFor: text("made_for"),
+    startedAt: date("started_at"),
+    /** Lo completa el servidor al marcar el proyecto como terminado. */
+    finishedAt: date("finished_at"),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    notes: text("notes"),
+    visibility: text("visibility")
+      .$type<ProfileVisibility>()
+      .notNull()
+      .default("publico"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    deletedAt: timestamp("deleted_at"),
+  },
+  (table) => [
+    uniqueIndex("project_user_slug_idx").on(table.userId, table.slug),
+    index("project_user_created_idx").on(table.userId, table.createdAt),
+  ],
+);
+
+export const projectRelations = relations(project, ({ one }) => ({
+  user: one(user, {
+    fields: [project.userId],
+    references: [user.id],
+  }),
+}));

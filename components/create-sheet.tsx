@@ -2,17 +2,21 @@
 
 import {
   BookOpen,
+  ChevronRight,
   CircleHelp,
   NotebookPen,
   PackagePlus,
   Plus,
   Shirt,
+  type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -21,8 +25,12 @@ import {
 } from "@/components/ui/sheet";
 import { es } from "@/messages/es";
 
-const items = [
-  { icon: Shirt, label: es.create.items.project },
+const items: { icon: LucideIcon; label: string; href?: string }[] = [
+  {
+    icon: Shirt,
+    label: es.create.items.project,
+    href: "/mi-tejido/proyectos/nuevo",
+  },
   { icon: NotebookPen, label: es.create.items.entry },
   { icon: PackagePlus, label: es.create.items.yarn },
   { icon: CircleHelp, label: es.create.items.question },
@@ -40,16 +48,39 @@ function CreateSheetBody() {
       </SheetHeader>
       <div className="px-4 pb-[max(env(safe-area-inset-bottom),1rem)]">
         <ul className="flex flex-col gap-1">
-          {items.map(({ icon: Icon, label }) => (
-            <li
-              key={label}
-              className="text-muted-foreground flex items-center gap-3 rounded-xl px-3 py-3"
-            >
-              <Icon className="size-5" strokeWidth={1.5} aria-hidden="true" />
-              <span className="text-sm font-medium">{label}</span>
-              <Badge variant="secondary" className="ml-auto">
-                {es.create.soonBadge}
-              </Badge>
+          {items.map(({ icon: Icon, label, href }) => (
+            <li key={label}>
+              {href ? (
+                <SheetClose asChild>
+                  <Link
+                    href={href}
+                    className="hover:bg-muted focus-visible:outline-ring flex items-center gap-3 rounded-xl px-3 py-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    <Icon
+                      className="size-5"
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm font-medium">{label}</span>
+                    <ChevronRight
+                      className="text-muted-foreground ml-auto size-4"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </SheetClose>
+              ) : (
+                <span className="text-muted-foreground flex items-center gap-3 rounded-xl px-3 py-3">
+                  <Icon
+                    className="size-5"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <span className="text-sm font-medium">{label}</span>
+                  <Badge variant="secondary" className="ml-auto">
+                    {es.create.soonBadge}
+                  </Badge>
+                </span>
+              )}
             </li>
           ))}
         </ul>

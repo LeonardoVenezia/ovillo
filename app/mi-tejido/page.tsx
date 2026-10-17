@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Notebook } from "lucide-react";
+import { Shirt } from "lucide-react";
 
 import { EmptyState } from "@/components/empty-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -17,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ResendVerificationButton } from "@/features/auth/components/resend-verification-button";
 import { VerificationNotice } from "@/features/auth/components/verification-notice";
 import { getProfileByUserId } from "@/features/profile/queries";
+import { ProjectCard } from "@/features/projects/components/project-card";
+import { listProjects, type Project } from "@/features/projects/queries";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
@@ -39,7 +41,10 @@ export default function MyWorkPage() {
 
 async function MyWorkContent() {
   const user = await requireUser();
-  const profile = await getProfileByUserId(user.id);
+  const [profile, projects] = await Promise.all([
+    getProfileByUserId(user.id),
+    listProjects(user.id),
+  ]);
   const profileStarted = (profile?.crafts.length ?? 0) > 0;
 
   return (
@@ -83,11 +88,58 @@ async function MyWorkContent() {
         </Card>
       ) : null}
 
-      <EmptyState
-        icon={Notebook}
-        title={es.myWork.emptyTitle}
-        body={es.myWork.emptyBody}
-      />
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-heading text-lg font-semibold">
+            {es.projects.hubTitle}
+          </h2>
+          {projects.length > 0 ? (
+            <Button size="sm" asChild>
+              <Link href="/mi-tejido/proyectos/nuevo">
+                {es.projects.newCta}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+
+        {projects.length === 0 ? (
+          <EmptyState
+            icon={Shirt}
+            title={es.projects.emptyTitle}
+            body={es.projects.emptyBody}
+            action={
+              <Button size="lg" asChild>
+                <Link href="/mi-tejido/proyectos/nuevo">
+                  {es.projects.firstCta}
+                </Link>
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            <p className="text-muted-foreground text-sm">
+              {statusSummary(projects)}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {projects.slice(0, 3).map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  href={`/mi-tejido/proyectos/${project.slug}`}
+                />
+              ))}
+            </div>
+            {projects.length > 3 ? (
+              <Link
+                href="/mi-tejido/proyectos"
+                className="text-sm underline underline-offset-4"
+              >
+                {es.projects.viewAll} ({projects.length})
+              </Link>
+            ) : null}
+          </>
+        )}
+      </section>
 
       <p className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <Link href="/configuracion" className="underline underline-offset-4">
@@ -104,4 +156,22 @@ async function MyWorkContent() {
       </p>
     </>
   );
+}
+
+/** "2 tejiendo · 1 terminado": resumen cortito para el hub. */
+function statusSummary(projects: Project[]): string {
+  const order = ["tejiendo", "en-pausa", "terminado", "frogueado"] as const;
+  return order
+    .map((status) => {
+      const count = projects.filter(
+        (project) => project.status === status,
+      ).length;
+      if (count === 0) {
+        return null;
+      }
+      const label = es.projects.statusLabels[status].toLowerCase();
+      return `${count} ${label}`;
+    })
+    .filter((part): part is string => part !== null)
+    .join(" · ");
 }
