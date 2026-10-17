@@ -25,6 +25,7 @@ Spanish-language knitting/crochet community ("Ravelry, but simpler, modern and m
 | `pnpm dev`                                   | Dev server (Turbopack) at http://localhost:3000      |
 | `pnpm build` / `pnpm start`                  | Production build / server                            |
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | ESLint / types + `tsc --noEmit` / Vitest             |
+| `pnpm test:e2e`                              | Playwright (local: levanta dev en el puerto 3100; ver D-029) |
 | `pnpm format`                                | Prettier (also sorts Tailwind classes)               |
 | `pnpm db:generate` → `pnpm db:migrate`       | Create + apply migrations (NEVER `drizzle-kit push`) |
 | `pnpm db:check`                              | Connectivity smoke test against Neon                 |

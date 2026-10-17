@@ -55,19 +55,25 @@ Hecho (código completo, probado localmente contra Neon):
 
 Hecho (bienvenida y perfil, mismo día):
 - **Bienvenida (`/bienvenida`)**: asistente salteable de 2 pasos (técnicas + nivel; país/región + ciudad opcional) que precarga lo ya elegido y guarda con Server Action. El registro ahora cae acá; el paso 3 de la spec llega con Comunidad (D-024). "Mi tejido" recuerda terminarlo mientras el perfil esté vacío.
-- **Perfil público (`/@usuario`)**: avatar con iniciales, nombre, bio corta, ubicación/país, técnicas, nivel, enlaces (Instagram / sitio) y "se sumó en <mes año>". Privacidad público/privado (D-026); las cuentas sin perfil muestran una tarjeta honesta con invitación a completarlo. Enlaces para verlo desde "Mi tejido" y desde Configuración.
-- **Edición del perfil en `/configuracion`**: bio, ubicación, país, técnicas, nivel, enlaces (normalizados: `@usuario`, usuario pelado o URL) y privacidad, con Server Actions + Zod revalidado en el servidor.
+- **Perfil público (`/@usuario`)**: avatar con iniciales, nombre, bio corta, ubicación/país, técnicas, nivel, enlaces (Instagram, TikTok, Facebook, Pinterest y sitio) y "se sumó en <mes año>". Privacidad público/privado (D-026); las cuentas sin perfil muestran una tarjeta honesta con invitación a completarlo. Enlaces para verlo desde "Mi tejido" y desde Configuración.
+- **Edición del perfil en `/configuracion`**: bio, ubicación, país, técnicas, nivel, enlaces (normalizados por red: `@usuario`, usuario pelado o URL completa; los enlaces de contenido o páginas sin usuario se rechazan) y privacidad, con Server Actions + Zod revalidado en el servidor.
 - Migración `0001` (`profile`, spec §6) aplicada a Neon; cascada al borrar la cuenta verificada.
 - **Calidad**: typecheck + lint + **48 tests**; build verde con la ruta dinámica (`instant = false`, con y sin arroba, mayúsculas). El 404 real de perfiles inexistentes pasa por `proxy.ts` reescribiendo a `/no-encontrado` (ver D-028: el caparazón PPR no puede cambiar el estado). Prueba de humo local: registro → aviso en Mi tejido → bienvenida precargada → perfil público con datos → privado (visitante vs. dueño) → 404 real → cuenta de prueba borrada.
+
+Hecho (enlaces sociales y tests e2e, mismo día):
+- **Enlaces sociales ampliados** (pedido del dueño): además de Instagram y el sitio, el perfil acepta **TikTok, Facebook y Pinterest**. Cada red normaliza su entrada (`@usuario`, usuario pelado o URL completa, con `www.`, `m.`, `fb.com` o dominios de Pinterest) y rechaza enlaces de contenido (`instagram.com/p/…`, `tiktok.com/video/…`, `pinterest.com/pin/…`) y perfiles sin usuario (`profile.php`). La tarjeta pública muestra cada red con su ícono y Configuración los precarga.
+- **Tests de punta a punta con Playwright** (`pnpm test:e2e`, local por ahora; ver D-029): **8 pruebas** sobre un servidor propio en el puerto 3100 y la base de `.env.local` — registro completo, verificación por email (abriendo el enlace real desde una bandeja de salida), bienvenida, perfil (bio, enlaces, modo privado visto por un visitante), ingreso por `@usuario`, cierre de sesión, recuperación de contraseña y comprobaciones públicas (404 real y pantallas privadas pidiendo ingreso). Los usuarios de prueba se borran al empezar y al terminar.
+- **Calidad**: typecheck + lint + **51 tests** unitarios + **8 e2e** en verde; `pnpm build` verde.
 
 Pendiente para cerrar la fase:
 - [x] **Dueño**: variables en Vercel cargadas (los 3 entornos): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY`, `EMAIL_FROM`.
 - [x] Push a `main`, CI en verde y deploy verificado en producción: registro, sesión, `/mi-tejido` con y sin cookie (307 al ingreso), `/configuracion` y páginas públicas. La cuenta de prueba se borró al terminar. Resend quedó en modo de prueba (solo entrega a la casilla del dueño).
 - [x] Probar el flujo completo desde el navegador: registro con el email del dueño, llegar el mail, confirmar y verificarlo en el sitio. Confirmado por el dueño el 17/10.
 - [x] Onboarding de bienvenida (`/bienvenida`, 2 de los 3 pasos; ver D-024) y perfil público (`/@usuario`) — ver arriba.
+- [x] Enlaces sociales ampliados (TikTok, Facebook y Pinterest) y tests e2e de auth y perfil con Playwright (`pnpm test:e2e`; ver D-029) — ver arriba.
 - [ ] **Dueño**: recorrer `/bienvenida` con su cuenta y mirar su perfil público (`/@suusuario`).
 - [ ] Avatar con subida a Cloudflare R2 (requiere tarjeta en Cloudflare → pedir OK al dueño) — sin R2, hoy se muestran iniciales.
-- [ ] Tests e2e de auth y perfil (Playwright).
+- [ ] Sumar los e2e al CI cuando exista la rama de Neon de desarrollo (D-021) — hoy son locales.
 - [ ] Google OAuth (pospuesto) y decisión de dominio.
 - [ ] Opcional: pegar la `RESEND_API_KEY` también en `.env.local` para que los mails salgan desde la máquina local (sin ella, se registran en consola).
 
