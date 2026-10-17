@@ -1,3 +1,5 @@
+import { appendFile } from "node:fs/promises";
+
 import { Resend } from "resend";
 
 import { getEnv } from "./env";
@@ -9,12 +11,24 @@ import { SITE_NAME, SITE_URL } from "./site";
  * Sin `RESEND_API_KEY` (desarrollo) el envío se registra en consola para poder
  * probar los flujos igual. En producción la clave vive en `.env.local` y en
  * Vercel. Las plantillas se arman con funciones puras para poder testearlas.
+ *
+ * Con `EMAIL_OUTBOX_PATH` (tests e2e) cada email se agrega a un archivo JSONL
+ * en lugar de enviarse: los tests abren desde ahí los enlaces de verdad.
  */
 
 type EmailContent = {
   subject: string;
   html: string;
   text: string;
+};
+
+/** Email tal como queda en la bandeja de salida de los tests e2e. */
+export type OutboxMessage = {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  at: number;
 };
 
 function escapeHtml(value: string): string {
@@ -116,6 +130,13 @@ export async function sendEmail({
   html,
   text,
 }: { to: string } & EmailContent): Promise<void> {
+  const outboxPath = process.env.EMAIL_OUTBOX_PATH;
+  if (outboxPath) {
+    const message: OutboxMessage = { to, subject, html, text, at: Date.now() };
+    await appendFile(outboxPath, `${JSON.stringify(message)}\n`, "utf8");
+    return;
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
   const from = getEnv().EMAIL_FROM ?? `${SITE_NAME} <onboarding@resend.dev>`;
 
