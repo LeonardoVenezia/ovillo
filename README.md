@@ -1,34 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ovillo
 
-## Getting Started
+Comunidad de tejido en español: dos agujas, crochet y más. Inspirada en Ravelry, más simple, moderna y pensada primero para el celular. _Ovillo_ es el nombre de trabajo (se cambia en un solo lugar: `lib/site.ts`).
 
-First, run the development server:
+**Estado actual: Fase 1 (base del proyecto).** El avance detallado vive en `docs/PROGRESS.md`.
+
+## Stack
+
+Next.js 16 (App Router, Turbopack, Cache Components) · TypeScript estricto · Tailwind CSS 4 + shadcn/ui (Radix) · Neon Postgres + Drizzle ORM · Better Auth (Fase 2) · Resend + React Email (Fase 2) · Cloudflare R2 (Fase 2) · Vercel.
+
+## Puesta en marcha
+
+Requiere Node 20.9+ y pnpm 10.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env.local   # completar DATABASE_URL con la connection string de Neon
+pnpm dev                     # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Comandos
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Comando                                      | Qué hace                             |
+| -------------------------------------------- | ------------------------------------ |
+| `pnpm dev` / `pnpm build` / `pnpm start`     | Desarrollo / build / producción      |
+| `pnpm lint` · `pnpm typecheck` · `pnpm test` | Calidad (ESLint, TypeScript, Vitest) |
+| `pnpm format`                                | Prettier                             |
+| `pnpm db:check`                              | Probar la conexión a Neon            |
+| `pnpm db:generate` / `pnpm db:migrate`       | Crear / aplicar migraciones          |
+| `pnpm dlx shadcn@latest add <componente>`    | Agregar componentes de UI            |
 
-## Learn More
+En desarrollo, `/dev/ui` muestra los tokens y componentes del sistema de diseño.
 
-To learn more about Next.js, take a look at the following resources:
+## Documentación
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `docs/SPEC.md` — especificación del producto (fuente de verdad).
+- `docs/PROGRESS.md` — avance por fases.
+- `docs/DECISIONS.md` — decisiones técnicas y por qué.
+- `AGENTS.md` — convenciones para agentes que trabajan en el repo.

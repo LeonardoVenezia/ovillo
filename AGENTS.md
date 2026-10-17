@@ -7,3 +7,52 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# AGENTS.md — Ovillo
+
+Spanish-language knitting/crochet community ("Ravelry, but simpler, modern and mobile first"). The owner does not write code: the agent does 100% of the programming, commands, commits and deploys, and keeps the docs current.
+
+## Source of truth
+
+- `docs/SPEC.md` — full product spec (data model, routes, design tokens, 8-phase plan). Read the relevant section before building something new. Do not edit it.
+- `docs/PROGRESS.md` — phase checklist and current state. Update it at the end of every work session.
+- `docs/DECISIONS.md` — technical decision log. When facing ambiguity, decide and record it there instead of stopping to ask, unless money or data deletion is involved.
+
+## Commands
+
+| Command                                      | What it does                                         |
+| -------------------------------------------- | ---------------------------------------------------- |
+| `pnpm dev`                                   | Dev server (Turbopack) at http://localhost:3000      |
+| `pnpm build` / `pnpm start`                  | Production build / server                            |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` | ESLint / `tsc --noEmit` / Vitest                     |
+| `pnpm format`                                | Prettier (also sorts Tailwind classes)               |
+| `pnpm db:generate` → `pnpm db:migrate`       | Create + apply migrations (NEVER `drizzle-kit push`) |
+| `pnpm db:check`                              | Connectivity smoke test against Neon                 |
+| `pnpm dlx shadcn@latest add <component>`     | Add shadcn/ui components                             |
+| `/dev/ui` (dev only)                         | Design-tokens + components showcase page             |
+
+Before finishing any task: `pnpm typecheck && pnpm lint && pnpm test` green. Before closing a phase: also `pnpm build`.
+
+## Stack facts that will bite you
+
+- **Next.js 16.4** (App Router): `params`, `searchParams`, `cookies()`, `headers()` are async — always `await` them. Use generated helper types (`LayoutProps<"/">`, `PageProps<...>`). `middleware.ts` is now `proxy.ts` (nodejs runtime, not configurable). `next lint` no longer exists. Turbopack is the default.
+- **Cache Components is ON** (`cacheComponents: true` + `partialPrefetching: true` in `next.config.ts`). Every route needs a static shell. Rules of thumb: shared public data → `"use cache"` + `cacheLife()` + `cacheTag()`; per-user/runtime data → a `<Suspense>` boundary or `"use cache: private"`. Uncached async work outside Suspense fails the build. Invalidate with `updateTag()` (read-your-writes, from Server Actions) or `revalidateTag(tag, profile)` — the second argument is required in 16.
+- **Tailwind v4 is CSS-first**: no `tailwind.config`; all tokens live in `app/globals.css` (`:root` / `.dark` + `@theme inline`). A Vitest test (`lib/design/contrast.test.ts`) parses that file and enforces WCAG AA ≥ 4.5:1 on 24 color pairs — run `pnpm test` after touching the palette.
+- **shadcn/ui** is the new generation: preset `radix-nova`, unified `radix-ui` package, and `cn` comes from the `cn` package (re-exported by `lib/utils.ts`) — do NOT add `clsx`/`tailwind-merge`. Components ship with English `sr-only` strings: translate to Spanish any you touch.
+- **pnpm 10 blocks postinstall scripts** (`pnpm-workspace.yaml` → `ignoredBuiltDependencies`). If a dependency needs one (e.g. `sharp`), run `pnpm approve-builds`.
+- On this machine the default npm registry is a private verdaccio that consistently 502s on `drizzle-orm`; install or update it with `--registry=https://registry.npmjs.org/`.
+- **Env vars** are validated lazily by `getEnv()` in `lib/env.ts` (build and CI don't need secrets; runtime fails fast). Every variable must also be documented in `.env.example`.
+
+## Conventions
+
+- Code identifiers, types and file names in English; comments and docs in Spanish; UI copy in Spanish, centralized in `messages/es.ts` (neutral Spanish, warm tone, no jargon).
+- Structure: `app/` routes · `features/<module>/` module logic (queries, actions, schemas, components) · `components/ui/` shadcn primitives · `components/` app-wide components · `db/` Drizzle · `lib/` utilities.
+- Mutations are Server Actions with Zod validation + server-side authorization on every action. Route Handlers only for webhooks/uploads.
+- DB tables/columns in `snake_case` (drizzle `casing: "snake_case"`); IDs `cuid2` (spec §6).
+- Design tokens and rules: spec §8. Mobile first; touch targets ≥ 44px; `prefers-reduced-motion` respected globally in `globals.css`.
+- Accessibility bar: WCAG 2.2 AA. Lighthouse ≥ 90 (performance + accessibility, mobile) at launch.
+- Commits: short, in Spanish, imperative, scoped (`feat(ui): ...`). Never commit secrets; `.env*` is gitignored except `.env.example`.
+
+## Environment / services
+
+Free tiers only (spec §4). Neon (Postgres), Vercel Hobby, Cloudflare R2, Resend, Better Auth with Google OAuth. Account setup is done step by step with the owner when the phase needs it. Do not create paid resources.
