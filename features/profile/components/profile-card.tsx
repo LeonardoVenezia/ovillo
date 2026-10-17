@@ -1,10 +1,20 @@
-import { AtSign, CalendarDays, Globe, MapPin } from "lucide-react";
+import {
+  AtSign,
+  CalendarDays,
+  Globe,
+  MapPin,
+  Pin,
+  Users,
+  Video,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserAvatar } from "@/components/user-avatar";
+import type { ProfileLink } from "@/db/profile-schema";
 import { es } from "@/messages/es";
 
 import { isCraft, isSkillLevel } from "../constants";
@@ -18,6 +28,22 @@ import type { PublicProfile } from "../queries";
  * llegan con sus módulos; mientras tanto, la página cuenta quién es la
  * persona. Un perfil privado muestra solo avatar, nombre y @usuario.
  */
+
+const linkIcons: Record<ProfileLink["kind"], LucideIcon> = {
+  instagram: AtSign,
+  tiktok: Video,
+  facebook: Users,
+  pinterest: Pin,
+  web: Globe,
+};
+
+const linkLabels: Record<ProfileLink["kind"], string> = {
+  instagram: es.profile.instagramLabel,
+  tiktok: es.profile.tiktokLabel,
+  facebook: es.profile.facebookLabel,
+  pinterest: es.profile.pinterestLabel,
+  web: es.profile.websiteLabel,
+};
 
 const memberSinceFormat = new Intl.DateTimeFormat("es", {
   month: "long",
@@ -123,27 +149,30 @@ export function ProfileCard({
                   </Badge>
                 ))}
                 {skill ? (
-                  <Badge variant="outline">{es.profile.skillLabels[skill]}</Badge>
+                  <Badge variant="outline">
+                    {es.profile.skillLabels[skill]}
+                  </Badge>
                 ) : null}
               </div>
             ) : null}
 
             {links.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {links.map((link) => (
-                  <Button key={link.url} variant="outline" size="sm" asChild>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {link.kind === "instagram" ? <AtSign /> : <Globe />}
-                      {link.kind === "instagram"
-                        ? es.profile.instagramLabel
-                        : es.profile.websiteLabel}
-                    </a>
-                  </Button>
-                ))}
+                {links.map((link) => {
+                  const Icon = linkIcons[link.kind];
+                  return (
+                    <Button key={link.url} variant="outline" size="sm" asChild>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Icon />
+                        {linkLabels[link.kind]}
+                      </a>
+                    </Button>
+                  );
+                })}
               </div>
             ) : null}
           </>

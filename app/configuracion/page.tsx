@@ -25,7 +25,7 @@ import {
   type ProfileFormInitial,
 } from "@/features/profile/components/profile-form";
 import { getProfileByUserId } from "@/features/profile/queries";
-import { instagramHandleFromUrl } from "@/features/profile/schemas";
+import { profileLinkValues } from "@/features/profile/schemas";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
@@ -63,15 +63,10 @@ async function AccountContent() {
     bio: profile?.bio ?? "",
     location: profile?.location ?? "",
     country:
-      profile?.country && isCountryCode(profile.country)
-        ? profile.country
-        : "",
+      profile?.country && isCountryCode(profile.country) ? profile.country : "",
     crafts: craftList,
     skillLevel,
-    instagram: instagramHandleFromUrl(
-      profile?.links.find((link) => link.kind === "instagram")?.url ?? "",
-    ),
-    website: profile?.links.find((link) => link.kind === "web")?.url ?? "",
+    ...profileLinkValues(profile?.links ?? []),
     visibility: profile?.defaultVisibility ?? "publico",
   };
 

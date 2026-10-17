@@ -1,43 +1,94 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  instagramHandleFromUrl,
-  instagramUrl,
+  buildProfileLinks,
   onboardingSchema,
+  profileLinkValues,
   profileUpdateSchema,
+  socialDisplay,
+  socialUrl,
   websiteUrl,
 } from "./schemas";
 
-describe("instagramUrl", () => {
-  it("normaliza el arroba, el usuario pelado y la URL completa", () => {
-    expect(instagramUrl("@tucuenta")).toBe("https://instagram.com/tucuenta");
-    expect(instagramUrl("tucuenta")).toBe("https://instagram.com/tucuenta");
-    expect(instagramUrl("https://www.instagram.com/tu.cuenta_1/")).toBe(
-      "https://instagram.com/tu.cuenta_1",
+describe("socialUrl", () => {
+  it("normaliza @, usuario pelado y URL en cada red", () => {
+    expect(socialUrl("instagram", "@tucuenta")).toBe(
+      "https://instagram.com/tucuenta",
+    );
+    expect(socialUrl("instagram", "tucuenta")).toBe(
+      "https://instagram.com/tucuenta",
+    );
+    expect(
+      socialUrl("instagram", "https://www.instagram.com/tu.cuenta_1/"),
+    ).toBe("https://instagram.com/tu.cuenta_1");
+    expect(socialUrl("tiktok", "@tucuenta")).toBe(
+      "https://tiktok.com/@tucuenta",
+    );
+    expect(
+      socialUrl("tiktok", "https://www.tiktok.com/@tu.cuenta?lang=es"),
+    ).toBe("https://tiktok.com/@tu.cuenta");
+    expect(socialUrl("facebook", "tu.usuario")).toBe(
+      "https://facebook.com/tu.usuario",
+    );
+    expect(socialUrl("facebook", "https://m.facebook.com/tu.usuario/")).toBe(
+      "https://facebook.com/tu.usuario",
+    );
+    expect(socialUrl("facebook", "fb.com/tu.usuario")).toBe(
+      "https://facebook.com/tu.usuario",
+    );
+    expect(socialUrl("pinterest", "@tucuenta")).toBe(
+      "https://pinterest.com/tucuenta",
+    );
+    expect(socialUrl("pinterest", "https://es.pinterest.com/tucuenta/")).toBe(
+      "https://pinterest.com/tucuenta",
     );
   });
 
   it("rechaza lo que no puede ser un usuario", () => {
-    expect(instagramUrl("")).toBeNull();
-    expect(instagramUrl("@")).toBeNull();
-    expect(instagramUrl("con espacio")).toBeNull();
-    expect(instagramUrl("usuario!raro")).toBeNull();
+    expect(socialUrl("instagram", "")).toBeNull();
+    expect(socialUrl("instagram", "@")).toBeNull();
+    expect(socialUrl("instagram", "con espacio")).toBeNull();
+    expect(socialUrl("instagram", "instagram.com")).toBeNull();
+    expect(socialUrl("tiktok", "a")).toBeNull();
+    expect(socialUrl("facebook", "ab")).toBeNull();
+    expect(socialUrl("facebook", "profile.php")).toBeNull();
+    expect(socialUrl("pinterest", "tu.cuenta")).toBeNull();
+  });
+
+  it("no confunde enlaces de contenido con perfiles", () => {
+    expect(
+      socialUrl("instagram", "https://instagram.com/p/ABC123/"),
+    ).toBeNull();
+    expect(socialUrl("tiktok", "https://tiktok.com/video/123")).toBeNull();
+    expect(socialUrl("facebook", "https://facebook.com/groups/123")).toBeNull();
+    expect(socialUrl("pinterest", "https://pinterest.com/pin/123/")).toBeNull();
   });
 });
 
-describe("instagramHandleFromUrl", () => {
-  it("vuelve de la URL guardada al @usuario", () => {
-    expect(instagramHandleFromUrl("https://instagram.com/tucuenta")).toBe(
+describe("socialDisplay", () => {
+  it("vuelve de la URL guardada al texto del formulario", () => {
+    expect(socialDisplay("instagram", "https://instagram.com/tucuenta")).toBe(
       "@tucuenta",
     );
-    expect(instagramHandleFromUrl("")).toBe("");
+    expect(socialDisplay("tiktok", "https://tiktok.com/@tucuenta")).toBe(
+      "@tucuenta",
+    );
+    expect(socialDisplay("facebook", "https://facebook.com/tu.usuario")).toBe(
+      "tu.usuario",
+    );
+    expect(socialDisplay("pinterest", "https://pinterest.com/tucuenta")).toBe(
+      "tucuenta",
+    );
+    expect(socialDisplay("instagram", "")).toBe("");
   });
 });
 
 describe("websiteUrl", () => {
   it("agrega https:// cuando falta el protocolo", () => {
     expect(websiteUrl("miblog.com.ar")).toBe("https://miblog.com.ar/");
-    expect(websiteUrl("http://tejidos.example")).toBe("http://tejidos.example/");
+    expect(websiteUrl("http://tejidos.example")).toBe(
+      "http://tejidos.example/",
+    );
   });
 
   it("rechaza textos que no son enlaces", () => {
@@ -82,6 +133,9 @@ describe("profileUpdateSchema", () => {
     crafts: ["crochet"],
     skillLevel: "beginner",
     instagram: "@tucuenta",
+    tiktok: "@tucuenta",
+    facebook: "tu.usuario",
+    pinterest: "tucuenta",
     website: "miblog.com.ar",
     visibility: "publico",
   };
@@ -96,6 +150,9 @@ describe("profileUpdateSchema", () => {
       country: "",
       skillLevel: "",
       instagram: "",
+      tiktok: "",
+      facebook: "",
+      pinterest: "",
       website: "",
     });
     expect(result.success).toBe(true);
@@ -116,8 +173,44 @@ describe("profileUpdateSchema", () => {
       profileUpdateSchema.safeParse({ ...valid, instagram: "@@malo" }).success,
     ).toBe(false);
     expect(
-      profileUpdateSchema.safeParse({ ...valid, website: "sin-punto" })
+      profileUpdateSchema.safeParse({ ...valid, tiktok: "a" }).success,
+    ).toBe(false);
+    expect(
+      profileUpdateSchema.safeParse({ ...valid, facebook: "ab" }).success,
+    ).toBe(false);
+    expect(
+      profileUpdateSchema.safeParse({ ...valid, pinterest: "tu.cuenta" })
         .success,
     ).toBe(false);
+    expect(
+      profileUpdateSchema.safeParse({ ...valid, website: "sin-punto" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("buildProfileLinks y profileLinkValues", () => {
+  const values = {
+    instagram: "@tucuenta",
+    tiktok: "",
+    facebook: "tu.usuario",
+    pinterest: "",
+    website: "miblog.com.ar",
+  };
+
+  it("arma los enlaces en orden, salteando los vacíos", () => {
+    expect(buildProfileLinks(values)).toEqual([
+      { kind: "instagram", url: "https://instagram.com/tucuenta" },
+      { kind: "facebook", url: "https://facebook.com/tu.usuario" },
+      { kind: "web", url: "https://miblog.com.ar/" },
+    ]);
+  });
+
+  it("devuelve los valores del formulario y vuelve al mismo resultado", () => {
+    const links = buildProfileLinks(values);
+    expect(profileLinkValues(links)).toEqual({
+      ...values,
+      website: "https://miblog.com.ar/",
+    });
+    expect(buildProfileLinks(profileLinkValues(links))).toEqual(links);
   });
 });

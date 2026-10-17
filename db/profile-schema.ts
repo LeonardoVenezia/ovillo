@@ -1,12 +1,6 @@
 import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
-import {
-  boolean,
-  jsonb,
-  pgTable,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { boolean, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { user } from "./auth-schema";
 
@@ -19,7 +13,7 @@ import { user } from "./auth-schema";
 
 /** Enlace externo del perfil. `kind` permite sumar tipos más adelante. */
 export type ProfileLink = {
-  kind: "instagram" | "web";
+  kind: "instagram" | "tiktok" | "facebook" | "pinterest" | "web";
   url: string;
 };
 

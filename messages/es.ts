@@ -122,7 +122,8 @@ export const es = {
       passwordChanged:
         "Contraseña actualizada. Por seguridad cerramos tus otras sesiones.",
       sessionTitle: "Sesión",
-      sessionBody: "Si estás en un dispositivo prestado, cerrá sesión al terminar.",
+      sessionBody:
+        "Si estás en un dispositivo prestado, cerrá sesión al terminar.",
       soon: "Muy pronto vas a poder elegir tema, notificaciones y más desde acá.",
     },
     errors: {
@@ -242,8 +243,15 @@ export const es = {
     levelTitle: "Nivel",
     levelNone: "Sin decir",
     linksTitle: "Enlaces",
+    linksHint: "Podés pegar el enlace completo o escribir tu usuario.",
     instagramLabel: "Instagram",
     instagramPlaceholder: "@tucuenta",
+    tiktokLabel: "TikTok",
+    tiktokPlaceholder: "@tucuenta",
+    facebookLabel: "Facebook",
+    facebookPlaceholder: "tu.usuario",
+    pinterestLabel: "Pinterest",
+    pinterestPlaceholder: "tucuenta",
     websiteLabel: "Sitio o blog",
     websitePlaceholder: "miblog.com.ar",
     visibilityTitle: "Privacidad",
@@ -257,8 +265,7 @@ export const es = {
     saving: "Guardando…",
     saved: "¡Perfil guardado!",
     memberSince: "Se sumó en",
-    detailsPrivate:
-      "La persona eligió que su página no sea pública por ahora.",
+    detailsPrivate: "La persona eligió que su página no sea pública por ahora.",
     emptyTitle: "Todavía sin presentación",
     emptyBody: "Cuando quiera, va a contar qué teje y desde dónde escribe.",
     emptyOwnBody:
@@ -268,6 +275,9 @@ export const es = {
       bioLong: "El texto quedó largo: máximo 160 caracteres.",
       locationLong: "La ubicación quedó larga: máximo 80 caracteres.",
       instagramInvalid: "Revisá el usuario de Instagram (ej.: @tucuenta).",
+      tiktokInvalid: "Revisá el usuario de TikTok (ej.: @tucuenta).",
+      facebookInvalid: "Revisá el usuario de Facebook (ej.: tu.usuario).",
+      pinterestInvalid: "Revisá el usuario de Pinterest (ej.: tucuenta).",
       websiteInvalid: "Revisá el enlace (ej.: miblog.com.ar).",
       craftsRequired: "Elegí al menos una técnica.",
       generic: "No pudimos guardar tus datos. Probá de nuevo en un momentito.",

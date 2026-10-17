@@ -1,15 +1,14 @@
 "use server";
 
 import { getDb } from "@/db";
-import { profile, type ProfileLink } from "@/db/profile-schema";
+import { profile } from "@/db/profile-schema";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
 import {
-  instagramUrl,
+  buildProfileLinks,
   onboardingSchema,
   profileUpdateSchema,
-  websiteUrl,
 } from "./schemas";
 
 /**
@@ -19,19 +18,6 @@ import {
  */
 
 export type ProfileActionResult = { ok: true } | { ok: false; error: string };
-
-function buildLinks(instagram: string, website: string): ProfileLink[] {
-  const links: ProfileLink[] = [];
-  const ig = instagramUrl(instagram);
-  if (ig) {
-    links.push({ kind: "instagram", url: ig });
-  }
-  const web = websiteUrl(website);
-  if (web) {
-    links.push({ kind: "web", url: web });
-  }
-  return links;
-}
 
 /** Guarda el onboarding de bienvenida (spec §5.1, pasos 1 y 2). */
 export async function saveOnboarding(
@@ -70,15 +56,14 @@ export async function updateProfile(
     return { ok: false, error: es.profile.errors.generic };
   }
 
-  const { bio, location, country, crafts, skillLevel, instagram, website } =
-    parsed.data;
+  const { bio, location, country, crafts, skillLevel } = parsed.data;
   const values = {
     bio: bio || null,
     location: location || null,
     country: country || null,
     crafts,
     skillLevel: skillLevel || null,
-    links: buildLinks(instagram, website),
+    links: buildProfileLinks(parsed.data),
     defaultVisibility: parsed.data.visibility,
     updatedAt: new Date(),
   };

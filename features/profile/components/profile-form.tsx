@@ -28,7 +28,9 @@ import type { CountryCode } from "../countries";
 import {
   BIO_MAX,
   profileUpdateSchema,
+  type ProfileLinkValues,
   type ProfileUpdateValues,
+  type SocialKind,
 } from "../schemas";
 import { CountrySelect, CraftChips, SkillPicker } from "./pickers";
 
@@ -37,16 +39,39 @@ import { CountrySelect, CraftChips, SkillPicker } from "./pickers";
  * selectores que la bienvenida.
  */
 
-export type ProfileFormInitial = {
+export type ProfileFormInitial = ProfileLinkValues & {
   bio: string;
   location: string;
   country: CountryCode | "";
   crafts: Craft[];
   skillLevel: SkillLevel | "";
-  instagram: string;
-  website: string;
   visibility: "publico" | "privado";
 };
+
+/** Campos de red del formulario, con su etiqueta y ejemplo. */
+const socialFields: { name: SocialKind; label: string; placeholder: string }[] =
+  [
+    {
+      name: "instagram",
+      label: es.profile.instagramLabel,
+      placeholder: es.profile.instagramPlaceholder,
+    },
+    {
+      name: "tiktok",
+      label: es.profile.tiktokLabel,
+      placeholder: es.profile.tiktokPlaceholder,
+    },
+    {
+      name: "facebook",
+      label: es.profile.facebookLabel,
+      placeholder: es.profile.facebookPlaceholder,
+    },
+    {
+      name: "pinterest",
+      label: es.profile.pinterestLabel,
+      placeholder: es.profile.pinterestPlaceholder,
+    },
+  ];
 
 export function ProfileForm({
   username,
@@ -115,9 +140,7 @@ export function ProfileForm({
           </Field>
 
           <Field data-invalid={errors.country ? true : undefined}>
-            <FieldLabel htmlFor="country">
-              {es.profile.countryLabel}
-            </FieldLabel>
+            <FieldLabel htmlFor="country">{es.profile.countryLabel}</FieldLabel>
             <Controller
               control={form.control}
               name="country"
@@ -164,21 +187,28 @@ export function ProfileForm({
 
         <FieldSet>
           <FieldLegend variant="label">{es.profile.linksTitle}</FieldLegend>
+          <FieldDescription>{es.profile.linksHint}</FieldDescription>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field data-invalid={errors.instagram ? true : undefined}>
-              <FieldLabel htmlFor="instagram">
-                {es.profile.instagramLabel}
-              </FieldLabel>
-              <Input
-                id="instagram"
-                placeholder={es.profile.instagramPlaceholder}
-                aria-invalid={Boolean(errors.instagram)}
-                {...form.register("instagram")}
-              />
-              <FieldError errors={[errors.instagram]} />
-            </Field>
+            {socialFields.map((social) => (
+              <Field
+                key={social.name}
+                data-invalid={errors[social.name] ? true : undefined}
+              >
+                <FieldLabel htmlFor={social.name}>{social.label}</FieldLabel>
+                <Input
+                  id={social.name}
+                  placeholder={social.placeholder}
+                  aria-invalid={Boolean(errors[social.name])}
+                  {...form.register(social.name)}
+                />
+                <FieldError errors={[errors[social.name]]} />
+              </Field>
+            ))}
 
-            <Field data-invalid={errors.website ? true : undefined}>
+            <Field
+              className="sm:col-span-2"
+              data-invalid={errors.website ? true : undefined}
+            >
               <FieldLabel htmlFor="website">
                 {es.profile.websiteLabel}
               </FieldLabel>
@@ -195,7 +225,9 @@ export function ProfileForm({
         </FieldSet>
 
         <FieldSet>
-          <FieldLegend variant="label">{es.profile.visibilityTitle}</FieldLegend>
+          <FieldLegend variant="label">
+            {es.profile.visibilityTitle}
+          </FieldLegend>
           <Controller
             control={form.control}
             name="visibility"
