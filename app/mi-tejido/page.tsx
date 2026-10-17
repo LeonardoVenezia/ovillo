@@ -94,7 +94,10 @@ async function MyWorkContent() {
           {es.myWork.settingsLink}
         </Link>
         {user.username ? (
-          <Link href={`/@${user.username}`} className="underline underline-offset-4">
+          <Link
+            href={`/@${user.username}`}
+            className="underline underline-offset-4"
+          >
             {es.myWork.publicProfileLink}
           </Link>
         ) : null}

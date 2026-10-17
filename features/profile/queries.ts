@@ -18,7 +18,9 @@ import {
 
 export type OwnProfile = typeof profile.$inferSelect;
 
-export async function getProfileByUserId(userId: string): Promise<OwnProfile | null> {
+export async function getProfileByUserId(
+  userId: string,
+): Promise<OwnProfile | null> {
   const rows = await getDb()
     .select()
     .from(profile)

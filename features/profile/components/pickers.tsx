@@ -3,7 +3,12 @@
 import { cn } from "@/lib/utils";
 import { es } from "@/messages/es";
 
-import { CRAFT_SLUGS, SKILL_LEVELS, type Craft, type SkillLevel } from "../constants";
+import {
+  CRAFT_SLUGS,
+  SKILL_LEVELS,
+  type Craft,
+  type SkillLevel,
+} from "../constants";
 import { COUNTRY_CODES, COUNTRY_NAMES } from "../countries";
 
 /**
@@ -37,7 +42,9 @@ export function CraftChips({
             className={cn(chipStyles, selected ? chipSelected : chipIdle)}
             onClick={() =>
               onChange(
-                selected ? value.filter((craft) => craft !== slug) : [...value, slug],
+                selected
+                  ? value.filter((craft) => craft !== slug)
+                  : [...value, slug],
               )
             }
           >
@@ -105,7 +112,7 @@ export function CountrySelect({
       id={id}
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-lg border bg-transparent px-2.5 text-base outline-none transition-colors focus-visible:ring-3 md:text-sm"
+      className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-lg border bg-transparent px-2.5 text-base transition-colors outline-none focus-visible:ring-3 md:text-sm"
     >
       <option value="">{emptyLabel ?? es.onboarding.countryPlaceholder}</option>
       {COUNTRY_CODES.map((code) => (

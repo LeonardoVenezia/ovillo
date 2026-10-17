@@ -51,9 +51,7 @@ async function WelcomeContent() {
     crafts,
     skillLevel,
     country:
-      profile?.country && isCountryCode(profile.country)
-        ? profile.country
-        : "",
+      profile?.country && isCountryCode(profile.country) ? profile.country : "",
     location: profile?.location ?? "",
   };
 

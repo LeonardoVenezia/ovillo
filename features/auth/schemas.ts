@@ -10,7 +10,8 @@ import { es } from "@/messages/es";
  */
 
 /** Letras, números, puntos y guiones bajos; sin separadores al borde (3 a 30). */
-export const USERNAME_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{1,28})[a-zA-Z0-9]$/;
+export const USERNAME_PATTERN =
+  /^[a-zA-Z0-9](?:[a-zA-Z0-9._]{1,28})[a-zA-Z0-9]$/;
 
 const password = z
   .string()

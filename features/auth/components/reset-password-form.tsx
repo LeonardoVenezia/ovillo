@@ -94,7 +94,9 @@ export function ResetPasswordForm() {
     >
       <FieldGroup>
         <Field data-invalid={errors.password ? true : undefined}>
-          <FieldLabel htmlFor="password">{es.auth.fields.newPassword}</FieldLabel>
+          <FieldLabel htmlFor="password">
+            {es.auth.fields.newPassword}
+          </FieldLabel>
           <Input
             id="password"
             type="password"

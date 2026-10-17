@@ -32,7 +32,12 @@ export function UserMenu({ user }: { user: SessionUser }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="lg" className="px-2" aria-label={es.auth.menu.open}>
+        <Button
+          variant="ghost"
+          size="lg"
+          className="px-2"
+          aria-label={es.auth.menu.open}
+        >
           <UserAvatar name={user.name} image={user.image} className="size-7" />
           <span className="max-w-32 truncate">{user.name}</span>
         </Button>

@@ -49,8 +49,9 @@ function deriveUsernameStatus(
 export function SignUpForm() {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
-  const [availability, setAvailability] =
-    useState<UsernameAvailability | null>(null);
+  const [availability, setAvailability] = useState<UsernameAvailability | null>(
+    null,
+  );
 
   const form = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),

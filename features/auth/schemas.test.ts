@@ -60,9 +60,9 @@ describe("signUpSchema", () => {
 
 describe("signInSchema", () => {
   it("exige identificador y contraseña", () => {
-    expect(signInSchema.safeParse({ identifier: "", password: "" }).success).toBe(
-      false,
-    );
+    expect(
+      signInSchema.safeParse({ identifier: "", password: "" }).success,
+    ).toBe(false);
     expect(
       signInSchema.safeParse({ identifier: "@maria", password: "abc" }).success,
     ).toBe(true);

@@ -19,10 +19,7 @@ import { authClient } from "@/lib/auth-client";
 import { es } from "@/messages/es";
 
 import { mapAuthError } from "../errors";
-import {
-  changePasswordSchema,
-  type ChangePasswordValues,
-} from "../schemas";
+import { changePasswordSchema, type ChangePasswordValues } from "../schemas";
 
 export function ChangePasswordForm() {
   const [formError, setFormError] = useState<string | null>(null);

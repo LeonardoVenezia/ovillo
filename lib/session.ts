@@ -36,7 +36,8 @@ export async function getOptionalUser(): Promise<SessionUser | null> {
   return {
     id: session.user.id,
     name: session.user.name,
-    username: typeof username === "string" && username.length > 0 ? username : null,
+    username:
+      typeof username === "string" && username.length > 0 ? username : null,
     email: session.user.email,
     emailVerified: session.user.emailVerified,
     image: session.user.image ?? null,
