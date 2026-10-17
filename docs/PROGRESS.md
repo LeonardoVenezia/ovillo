@@ -58,7 +58,7 @@ Hecho (bienvenida y perfil, mismo día):
 - **Perfil público (`/@usuario`)**: avatar con iniciales, nombre, bio corta, ubicación/país, técnicas, nivel, enlaces (Instagram / sitio) y "se sumó en <mes año>". Privacidad público/privado (D-026); las cuentas sin perfil muestran una tarjeta honesta con invitación a completarlo. Enlaces para verlo desde "Mi tejido" y desde Configuración.
 - **Edición del perfil en `/configuracion`**: bio, ubicación, país, técnicas, nivel, enlaces (normalizados: `@usuario`, usuario pelado o URL) y privacidad, con Server Actions + Zod revalidado en el servidor.
 - Migración `0001` (`profile`, spec §6) aplicada a Neon; cascada al borrar la cuenta verificada.
-- **Calidad**: typecheck + lint + **48 tests**; build verde con la ruta dinámica (`instant = false`, 404 real, con y sin arroba). Prueba de humo local: registro → aviso en Mi tejido → bienvenida precargada → perfil público con datos → privado (visitante vs. dueño) → cuenta de prueba borrada.
+- **Calidad**: typecheck + lint + **48 tests**; build verde con la ruta dinámica (`instant = false`, con y sin arroba, mayúsculas). El 404 real de perfiles inexistentes pasa por `proxy.ts` reescribiendo a `/no-encontrado` (ver D-028: el caparazón PPR no puede cambiar el estado). Prueba de humo local: registro → aviso en Mi tejido → bienvenida precargada → perfil público con datos → privado (visitante vs. dueño) → 404 real → cuenta de prueba borrada.
 
 Pendiente para cerrar la fase:
 - [x] **Dueño**: variables en Vercel cargadas (los 3 entornos): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY`, `EMAIL_FROM`.
