@@ -1,8 +1,10 @@
-import "dotenv/config";
-
+import { config } from "dotenv";
 import { sql } from "drizzle-orm";
 
 import { getDb } from "./index";
+
+// Igual que Next.js en desarrollo: .env.local pisa a .env (dotenv/config solo lee .env).
+config({ path: [".env.local", ".env"], quiet: true });
 
 async function main() {
   const db = getDb();

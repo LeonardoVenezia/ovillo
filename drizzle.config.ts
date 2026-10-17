@@ -1,6 +1,8 @@
-import "dotenv/config";
-
+import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
+
+// Igual que Next.js en desarrollo: .env.local pisa a .env.
+config({ path: [".env.local", ".env"], quiet: true });
 
 export default defineConfig({
   dialect: "postgresql",
