@@ -24,7 +24,7 @@ Spanish-language knitting/crochet community ("Ravelry, but simpler, modern and m
 | -------------------------------------------- | ---------------------------------------------------- |
 | `pnpm dev`                                   | Dev server (Turbopack) at http://localhost:3000      |
 | `pnpm build` / `pnpm start`                  | Production build / server                            |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` | ESLint / `tsc --noEmit` / Vitest                     |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` | ESLint / types + `tsc --noEmit` / Vitest             |
 | `pnpm format`                                | Prettier (also sorts Tailwind classes)               |
 | `pnpm db:generate` → `pnpm db:migrate`       | Create + apply migrations (NEVER `drizzle-kit push`) |
 | `pnpm db:check`                              | Connectivity smoke test against Neon                 |
@@ -35,7 +35,7 @@ Before finishing any task: `pnpm typecheck && pnpm lint && pnpm test` green. Bef
 
 ## Stack facts that will bite you
 
-- **Next.js 16.4** (App Router): `params`, `searchParams`, `cookies()`, `headers()` are async — always `await` them. Use generated helper types (`LayoutProps<"/">`, `PageProps<...>`). `middleware.ts` is now `proxy.ts` (nodejs runtime, not configurable). `next lint` no longer exists. Turbopack is the default.
+- **Next.js 16.4** (App Router): `params`, `searchParams`, `cookies()`, `headers()` are async — always `await` them. Use generated helper types (`LayoutProps<"/">`, `PageProps<...>`). `middleware.ts` is now `proxy.ts` (nodejs runtime, not configurable). `next lint` no longer exists. Turbopack is the default. Route helper types only exist after `next dev` / `next build` / `next typegen`: that's why `pnpm typecheck` runs `next typegen` first (fresh clones and CI would otherwise fail with `Cannot find name 'LayoutProps'`).
 - **Cache Components is ON** (`cacheComponents: true` + `partialPrefetching: true` in `next.config.ts`). Every route needs a static shell. Rules of thumb: shared public data → `"use cache"` + `cacheLife()` + `cacheTag()`; per-user/runtime data → a `<Suspense>` boundary or `"use cache: private"`. Uncached async work outside Suspense fails the build. Invalidate with `updateTag()` (read-your-writes, from Server Actions) or `revalidateTag(tag, profile)` — the second argument is required in 16.
 - **Tailwind v4 is CSS-first**: no `tailwind.config`; all tokens live in `app/globals.css` (`:root` / `.dark` + `@theme inline`). A Vitest test (`lib/design/contrast.test.ts`) parses that file and enforces WCAG AA ≥ 4.5:1 on 24 color pairs — run `pnpm test` after touching the palette.
 - **shadcn/ui** is the new generation: preset `radix-nova`, unified `radix-ui` package, and `cn` comes from the `cn` package (re-exported by `lib/utils.ts`) — do NOT add `clsx`/`tailwind-merge`. Components ship with English `sr-only` strings: translate to Spanish any you touch.

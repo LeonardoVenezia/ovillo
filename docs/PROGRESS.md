@@ -31,11 +31,11 @@ Hecho:
 - **Diseño**: paleta cálida de la spec §8 como variables CSS (claro/oscuro), fuentes **Fraunces + Inter**, modo claro/oscuro/sistema. Test automático de **contraste WCAG AA** (24 pares) que lee el CSS real.
 - **Navegación de 5 destinos**: header en desktop, barra inferior en mobile con botón central *Crear* (hoja inferior con las 5 acciones, marcadas "Pronto").
 - Páginas base: landing, `Explorar`, `Comunidad`, `Mi tejido` (estados vacíos), `Ingresar`/`Registro` (placeholder de Fase 2), 404 en español y `/dev/ui` (solo desarrollo).
-- **Calidad**: ESLint + Prettier + `tsc --noEmit` + Vitest; CI listo en `.github/workflows/ci.yml`.
+- **Calidad**: ESLint + Prettier + `tsc --noEmit` (con `next typegen` previo) + Vitest; **CI activo en GitHub** (`.github/workflows/ci.yml`): typecheck + lint + test + build en cada push, en verde.
+- **GitHub**: repo publicado en la cuenta personal `LeonardoVenezia` (identidad git por proyecto, ver D-012); todo el historial con commits firmados como el dueño.
 - **Datos**: Neon + Drizzle cableados (cliente lazy, config de migraciones `snake_case`, `pnpm db:check` de humo) + validación de env con Zod (`lib/env.ts`) y `.env.example` completo.
 - Build de producción OK: 8 rutas estáticas con **Cache Components** activo.
 
 Pendientes / bloqueos:
-- Crear el proyecto en **Neon** y pegar `DATABASE_URL` en `.env.local` (gratis, ~5 min; se hace junto al agente).
-- Publicar el repo en **GitHub** para que corra el CI (opcional hasta el primer deploy).
-- Cuenta de **Vercel** para el primer deploy (al cerrar la fase).
+- Crear el proyecto en **Neon** y pegar `DATABASE_URL` en `.env.local` (gratis, ~5 min; se hace junto al agente vía la integración de Vercel).
+- Primer deploy en **Vercel** (el proyecto aún no existe) y conectar la base a todos los entornos.
