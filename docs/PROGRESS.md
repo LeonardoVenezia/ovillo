@@ -7,8 +7,8 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 
 - [x] Fase 0 — Repo y documentación
 - [x] Fase 1 — Base del proyecto (deploy en Vercel + base Neon conectada)
-- [ ] Fase 2 — Cuenta, auth y perfil
-- [ ] Fase 3 — Mi tejido (parte 1)
+- [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
+- [ ] Fase 3 — Mi tejido (parte 1) ← en curso (proyectos hechos)
 - [ ] Fase 4 — Catálogo (lanas y patrones)
 - [ ] Fase 5 — Mi tejido (parte 2)
 - [ ] Fase 6 — Comunidad
@@ -65,18 +65,35 @@ Hecho (enlaces sociales y tests e2e, mismo día):
 - **Tests de punta a punta con Playwright** (`pnpm test:e2e`, local por ahora; ver D-029): **8 pruebas** sobre un servidor propio en el puerto 3100 y la base de `.env.local` — registro completo, verificación por email (abriendo el enlace real desde una bandeja de salida), bienvenida, perfil (bio, enlaces, modo privado visto por un visitante), ingreso por `@usuario`, cierre de sesión, recuperación de contraseña y comprobaciones públicas (404 real y pantallas privadas pidiendo ingreso). Los usuarios de prueba se borran al empezar y al terminar.
 - **Calidad**: typecheck + lint + **51 tests** unitarios + **8 e2e** en verde; `pnpm build` verde.
 
-Pendiente para cerrar la fase:
+Pendiente para cerrar la fase (diferidos a propósito; no bloquean el cierre):
 - [x] **Dueño**: variables en Vercel cargadas (los 3 entornos): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY`, `EMAIL_FROM`.
 - [x] Push a `main`, CI en verde y deploy verificado en producción: registro, sesión, `/mi-tejido` con y sin cookie (307 al ingreso), `/configuracion` y páginas públicas. La cuenta de prueba se borró al terminar. Resend quedó en modo de prueba (solo entrega a la casilla del dueño).
 - [x] Probar el flujo completo desde el navegador: registro con el email del dueño, llegar el mail, confirmar y verificarlo en el sitio. Confirmado por el dueño el 17/10.
 - [x] Onboarding de bienvenida (`/bienvenida`, 2 de los 3 pasos; ver D-024) y perfil público (`/@usuario`) — ver arriba.
 - [x] Enlaces sociales ampliados (TikTok, Facebook y Pinterest) y tests e2e de auth y perfil con Playwright (`pnpm test:e2e`; ver D-029) — ver arriba.
 - [ ] **Dueño**: recorrer `/bienvenida` con su cuenta y mirar su perfil público (`/@suusuario`).
-- [ ] Avatar con subida a Cloudflare R2 (requiere tarjeta en Cloudflare → pedir OK al dueño) — sin R2, hoy se muestran iniciales.
+- [ ] Avatar con subida a Cloudflare R2 (requiere tarjeta en Cloudflare → pedir OK al dueño) — sin R2, hoy se muestran iniciales. Diferido por el dueño para el final de la Fase 3 (las fotos de proyectos lo van a necesitar).
 - [ ] Sumar los e2e al CI cuando exista la rama de Neon de desarrollo (D-021) — hoy son locales.
 - [ ] Google OAuth (pospuesto) y decisión de dominio.
 - [ ] Opcional: pegar la `RESEND_API_KEY` también en `.env.local` para que los mails salgan desde la máquina local (sin ella, se registran en consola).
 
+## Fase 3 — Mi tejido (parte 1) (2026-10-17 → )
+
+Primer tramo: **proyectos** (spec §5.3), con la misma vara de calidad (typecheck + lint + unit + e2e + build verdes).
+
+Hecho (proyectos):
+- **Modelo**: tabla `project` (migración `0002`) con estados `Tejiendo / En pausa / Terminado / Frogueado`, progreso manual 0–100, técnica, patrón (texto o enlace), talla, para quién, fecha de inicio, etiquetas, notas, visibilidad por proyecto, borrado lógico y slug único por persona estable (D-030). IDs con `cuid2`.
+- **Gestión en Mi tejido**: hub con resumen por estado y últimos proyectos; listado completo en `/mi-tejido/proyectos`; creación en `/mi-tejido/proyectos/nuevo` (solo el nombre es obligatorio — 30 segundos reales), detalle con cambio rápido de estado (sin recargar, con aviso al terminar) y edición; eliminar con confirmación en dos pasos. La hoja *Crear* del botón central ya lleva a "Proyecto".
+- **Cara pública**: página `/@usuario/proyectos/slug` sin login (con 404 real vía `proxy.ts`, D-031), sección "Proyectos" en el perfil público (últimos 6, respeta privacidad) y privacidad por proyecto: los privados se ven solo desde la cuenta dueña y el resto ve una tarjeta que lo explica.
+- **Calidad**: **61 tests** unitarios (slug, validaciones, conversiones del formulario) + **13 e2e** (5 nuevos: creación, estado, público/privado con visitante real y 404 de proyecto; `pnpm test:e2e`, 54 s) + build verde. Usuarios de prueba borrados al terminar.
+
+Pendiente de esta fase (próximos tramos):
+- [ ] Diario de avance (entradas con fecha, foto(s) y texto corto; "publicar en el feed" se guarda para Fase 7).
+- [ ] Fotos: galería de hasta 20 por proyecto, reordenable y con portada — **requiere activar Cloudflare R2** (pedir OK al dueño cuando lleguemos a ese tramo).
+- [ ] Contador de vueltas: varios por proyecto, botones grandes, recordatorio cada N vueltas, pantalla completa, modo offline con sincronización (spec §5.4).
+- [ ] Herramientas: inventario de agujas y ganchos (medidas con equivalencias).
+
 Notas:
 - Por ahora dev y producción comparten la misma base Neon (D-021); antes del registro público hace falta una rama de desarrollo.
 - La migración `0000` es la primera del repo; `db/auth-schema.ts` se regenera con el CLI (D-022), no se edita a mano.
+- Las migraciones `0001` (`profile`) y `0002` (`project`) ya están aplicadas; se generan y aplican solo con `pnpm db:generate` + `pnpm db:migrate`.

@@ -20,17 +20,17 @@ Spanish-language knitting/crochet community ("Ravelry, but simpler, modern and m
 
 ## Commands
 
-| Command                                      | What it does                                         |
-| -------------------------------------------- | ---------------------------------------------------- |
-| `pnpm dev`                                   | Dev server (Turbopack) at http://localhost:3000      |
-| `pnpm build` / `pnpm start`                  | Production build / server                            |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` | ESLint / types + `tsc --noEmit` / Vitest             |
+| Command                                      | What it does                                                 |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| `pnpm dev`                                   | Dev server (Turbopack) at http://localhost:3000              |
+| `pnpm build` / `pnpm start`                  | Production build / server                                    |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` | ESLint / types + `tsc --noEmit` / Vitest                     |
 | `pnpm test:e2e`                              | Playwright (local: levanta dev en el puerto 3100; ver D-029) |
-| `pnpm format`                                | Prettier (also sorts Tailwind classes)               |
-| `pnpm db:generate` → `pnpm db:migrate`       | Create + apply migrations (NEVER `drizzle-kit push`) |
-| `pnpm db:check`                              | Connectivity smoke test against Neon                 |
-| `pnpm dlx shadcn@latest add <component>`     | Add shadcn/ui components                             |
-| `/dev/ui` (dev only)                         | Design-tokens + components showcase page             |
+| `pnpm format`                                | Prettier (also sorts Tailwind classes)                       |
+| `pnpm db:generate` → `pnpm db:migrate`       | Create + apply migrations (NEVER `drizzle-kit push`)         |
+| `pnpm db:check`                              | Connectivity smoke test against Neon                         |
+| `pnpm dlx shadcn@latest add <component>`     | Add shadcn/ui components                                     |
+| `/dev/ui` (dev only)                         | Design-tokens + components showcase page                     |
 
 Before finishing any task: `pnpm typecheck && pnpm lint && pnpm test` green. Before closing a phase: also `pnpm build`.
 
