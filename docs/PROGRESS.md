@@ -53,13 +53,21 @@ Hecho (código completo, probado localmente contra Neon):
 - **`/normas`** publicada con el resumen de convivencia (lo acepta el registro).
 - **Calidad**: typecheck + lint + **36 tests** en verde; `pnpm build` verificado **sin `.env.local`** (build/CI sin secretos). Prueba de humo real contra Neon: registro, sesión, ingreso por @usuario, página privada con y sin cookie, reenvío de verificación, cierre de sesión; la cuenta de prueba se borró al terminar.
 
+Hecho (bienvenida y perfil, mismo día):
+- **Bienvenida (`/bienvenida`)**: asistente salteable de 2 pasos (técnicas + nivel; país/región + ciudad opcional) que precarga lo ya elegido y guarda con Server Action. El registro ahora cae acá; el paso 3 de la spec llega con Comunidad (D-024). "Mi tejido" recuerda terminarlo mientras el perfil esté vacío.
+- **Perfil público (`/@usuario`)**: avatar con iniciales, nombre, bio corta, ubicación/país, técnicas, nivel, enlaces (Instagram / sitio) y "se sumó en <mes año>". Privacidad público/privado (D-026); las cuentas sin perfil muestran una tarjeta honesta con invitación a completarlo. Enlaces para verlo desde "Mi tejido" y desde Configuración.
+- **Edición del perfil en `/configuracion`**: bio, ubicación, país, técnicas, nivel, enlaces (normalizados: `@usuario`, usuario pelado o URL) y privacidad, con Server Actions + Zod revalidado en el servidor.
+- Migración `0001` (`profile`, spec §6) aplicada a Neon; cascada al borrar la cuenta verificada.
+- **Calidad**: typecheck + lint + **48 tests**; build verde con la ruta dinámica (`instant = false`, 404 real, con y sin arroba). Prueba de humo local: registro → aviso en Mi tejido → bienvenida precargada → perfil público con datos → privado (visitante vs. dueño) → cuenta de prueba borrada.
+
 Pendiente para cerrar la fase:
 - [x] **Dueño**: variables en Vercel cargadas (los 3 entornos): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY`, `EMAIL_FROM`.
 - [x] Push a `main`, CI en verde y deploy verificado en producción: registro, sesión, `/mi-tejido` con y sin cookie (307 al ingreso), `/configuracion` y páginas públicas. La cuenta de prueba se borró al terminar. Resend quedó en modo de prueba (solo entrega a la casilla del dueño).
-- [ ] Probar el flujo completo desde el navegador: registro con el email del dueño, llegar el mail, confirmar y verificarlo en el sitio.
-- [ ] Onboarding de bienvenida (`/bienvenida`, 3 pasos) y perfil público (`/@usuario`).
+- [x] Probar el flujo completo desde el navegador: registro con el email del dueño, llegar el mail, confirmar y verificarlo en el sitio. Confirmado por el dueño el 17/10.
+- [x] Onboarding de bienvenida (`/bienvenida`, 2 de los 3 pasos; ver D-024) y perfil público (`/@usuario`) — ver arriba.
+- [ ] **Dueño**: recorrer `/bienvenida` con su cuenta y mirar su perfil público (`/@suusuario`).
 - [ ] Avatar con subida a Cloudflare R2 (requiere tarjeta en Cloudflare → pedir OK al dueño) — sin R2, hoy se muestran iniciales.
-- [ ] Tests e2e de auth (Playwright).
+- [ ] Tests e2e de auth y perfil (Playwright).
 - [ ] Google OAuth (pospuesto) y decisión de dominio.
 - [ ] Opcional: pegar la `RESEND_API_KEY` también en `.env.local` para que los mails salgan desde la máquina local (sin ella, se registran en consola).
 
