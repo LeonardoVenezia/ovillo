@@ -41,6 +41,7 @@ Before finishing any task: `pnpm typecheck && pnpm lint && pnpm test` green. Bef
 - **shadcn/ui** is the new generation: preset `radix-nova`, unified `radix-ui` package, and `cn` comes from the `cn` package (re-exported by `lib/utils.ts`) — do NOT add `clsx`/`tailwind-merge`. Components ship with English `sr-only` strings: translate to Spanish any you touch.
 - **pnpm 10 blocks postinstall scripts** (`pnpm-workspace.yaml` → `ignoredBuiltDependencies`). If a dependency needs one (e.g. `sharp`), run `pnpm approve-builds`.
 - On this machine the default npm registry is a private verdaccio that consistently 502s on `drizzle-orm`; install or update it with `--registry=https://registry.npmjs.org/`.
+- **Git identity is per-project here**: this repo belongs to the owner's **personal** GitHub account (`LeonardoVenezia`, email `leovenezia@outlook.com.ar`) and uses a repository-local `core.sshCommand` that forces `~/.ssh/id_ed25519_leonardo` with `-F /dev/null` (the machine's global identity is the work account). Do not change remote or identity without checking with the owner.
 - **Env vars** are validated lazily by `getEnv()` in `lib/env.ts` (build and CI don't need secrets; runtime fails fast). Every variable must also be documented in `.env.example`.
 
 ## Conventions
