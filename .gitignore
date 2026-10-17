@@ -18,6 +18,8 @@
 # next.js
 /.next/
 /out/
+# Generado por Next (flip-flopea entre dev y build; la guía pide no versionarlo)
+next-env.d.ts
 
 # production
 /build
