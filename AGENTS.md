@@ -1,11 +1,9 @@
-# AGENTS.md — las_chicas
+<!-- BEGIN:nextjs-agent-rules -->
 
-## Status
-- Greenfield project: this directory is empty (no `git` repo, no `package.json`, no source, no config) as of 2026-10-16.
-- Owner intent: a web app (React/Next.js-class stack). The specific framework has not been chosen yet.
+## This is NOT the Next.js you know
 
-## Working here
-- Not a monorepo: sibling folders in `../` (`dinocartas`, `galpon`, `blog`, etc.) are unrelated projects — do not import from or assume shared tooling with them.
-- `git` is not initialized here; commit/status workflows will fail until `git init` is run.
-- If asked to scaffold: confirm the framework choice (e.g. Next.js vs. Vite + React) with the owner unless they have already named one.
-- After scaffolding, update this file: replace the Status section above with the real package manager, `dev` / `build` / `test` / `lint` commands, and directory layout, so later sessions don't have to rediscover them.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
