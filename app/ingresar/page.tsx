@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Suspense } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,26 +8,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SignInForm } from "@/features/auth/components/sign-in-form";
 import { es } from "@/messages/es";
 
 export const metadata: Metadata = {
-  title: es.auth.signIn,
+  title: es.auth.signIn.label,
 };
 
 export default function SignInPage() {
   return (
-    <div className="mx-auto max-w-md py-10">
+    <div className="mx-auto w-full max-w-md py-10">
       <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-lg">
-            {es.auth.stubTitle}
+          <CardTitle className="font-heading text-xl">
+            {es.auth.signIn.title}
           </CardTitle>
-          <CardDescription>{es.auth.stubBody}</CardDescription>
+          <CardDescription>{es.auth.signIn.subtitle}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="outline" asChild>
-            <Link href="/">{es.auth.backHome}</Link>
-          </Button>
+          {/* El formulario lee `?volver=` (useSearchParams) → Suspense. */}
+          <Suspense fallback={<Skeleton className="h-52 w-full" />}>
+            <SignInForm />
+          </Suspense>
         </CardContent>
       </Card>
     </div>

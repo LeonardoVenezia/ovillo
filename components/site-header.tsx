@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { Bell, LogIn, Search } from "lucide-react";
+import { Suspense } from "react";
+import { Bell, Search } from "lucide-react";
 
-import { HeaderCreateButton } from "@/components/create-sheet";
 import { DesktopNav } from "@/components/desktop-nav";
+import { HeaderUser } from "@/components/header-user";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SITE_NAME } from "@/lib/site";
 import { es } from "@/messages/es";
 
@@ -39,13 +41,10 @@ export function SiteHeader() {
             <Bell />
           </Button>
           <ThemeToggle />
-          <HeaderCreateButton />
-          <Button variant="ghost" size="lg" asChild>
-            <Link href="/ingresar">
-              <LogIn data-icon="inline-start" />
-              {es.auth.signIn}
-            </Link>
-          </Button>
+          {/* La sesión se lee en el servidor: siempre detrás de Suspense. */}
+          <Suspense fallback={<Skeleton className="size-9 rounded-full" />}>
+            <HeaderUser />
+          </Suspense>
         </div>
       </div>
     </header>

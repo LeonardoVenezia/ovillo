@@ -15,10 +15,10 @@ export default function HomePage() {
       <p className="text-muted-foreground text-lg">{es.landing.body}</p>
       <div className="flex flex-wrap gap-3">
         <Button size="lg" asChild>
-          <Link href="/explorar">{es.landing.ctaPrimary}</Link>
+          <Link href="/registro">{es.landing.ctaPrimary}</Link>
         </Button>
         <Button variant="outline" size="lg" asChild>
-          <Link href="/comunidad">{es.landing.ctaSecondary}</Link>
+          <Link href="/ingresar">{es.landing.ctaSecondary}</Link>
         </Button>
       </div>
       <p className="text-muted-foreground text-sm">{es.landing.note}</p>

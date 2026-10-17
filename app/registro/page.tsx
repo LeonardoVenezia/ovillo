@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,26 +7,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SignUpForm } from "@/features/auth/components/sign-up-form";
 import { es } from "@/messages/es";
 
 export const metadata: Metadata = {
-  title: es.auth.signUp,
+  title: es.auth.signUp.label,
 };
 
 export default function SignUpPage() {
   return (
-    <div className="mx-auto max-w-md py-10">
+    <div className="mx-auto w-full max-w-md py-10">
       <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-lg">
-            {es.auth.stubTitle}
+          <CardTitle className="font-heading text-xl">
+            {es.auth.signUp.title}
           </CardTitle>
-          <CardDescription>{es.auth.stubBody}</CardDescription>
+          <CardDescription>{es.auth.signUp.subtitle}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="outline" asChild>
-            <Link href="/">{es.auth.backHome}</Link>
-          </Button>
+          <SignUpForm />
         </CardContent>
       </Card>
     </div>

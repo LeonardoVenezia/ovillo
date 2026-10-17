@@ -14,9 +14,11 @@ const envSchema = z.object({
   /** URL pública del sitio; opcional en desarrollo (lib/site.ts usa localhost). */
   NEXT_PUBLIC_SITE_URL: z.url().optional(),
 
+  // Fase 2: autenticación (Better Auth). Requeridas de acá en adelante.
+  BETTER_AUTH_SECRET: z.string().min(32),
+  BETTER_AUTH_URL: z.url(),
+
   // Fase 2 en adelante — se vuelven requeridas cuando cada módulo las use.
-  BETTER_AUTH_SECRET: z.string().min(32).optional(),
-  BETTER_AUTH_URL: z.url().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
