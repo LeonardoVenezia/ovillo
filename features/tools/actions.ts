@@ -24,8 +24,7 @@ import {
 export type ToolActionResult = { ok: true } | { ok: false; error: string };
 
 export type ToolCreateResult =
-  | { ok: true; id: string }
-  | { ok: false; error: string };
+  { ok: true; id: string } | { ok: false; error: string };
 
 /** Deja el input listo para la base (cable solo en circulares, textos vacíos en null). */
 function normalize(input: ToolCreateInput) {
@@ -35,7 +34,8 @@ function normalize(input: ToolCreateInput) {
     material: input.material,
     lengthCm: input.kind === "circulares" ? input.lengthCm : null,
     quantity: input.quantity,
-    notes: input.notes === null || input.notes.length === 0 ? null : input.notes,
+    notes:
+      input.notes === null || input.notes.length === 0 ? null : input.notes,
   };
 }
 

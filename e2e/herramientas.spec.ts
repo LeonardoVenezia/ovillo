@@ -67,9 +67,7 @@ test("alta: guarda la medida con su equivalencia", async ({ page }) => {
   );
   await page.getByTestId("tool-material-aluminio").click();
   await page.getByTestId("tool-quantity").fill("2");
-  await page
-    .getByTestId("tool-notes")
-    .fill("Las de mi abuela, heredadas.");
+  await page.getByTestId("tool-notes").fill("Las de mi abuela, heredadas.");
   await page.getByTestId("tool-save").click();
   await expect(page.getByText("¡Herramienta guardada!")).toBeVisible();
 
@@ -113,7 +111,9 @@ test("alta: gancho con letra y circular con largo de cable", async ({
   await expect(circular.getByTestId("tool-row-equivalence")).toHaveText(
     "US 8 · UK 6",
   );
-  await expect(circular).toContainText("Agujas circulares · Madera · cable 80 cm");
+  await expect(circular).toContainText(
+    "Agujas circulares · Madera · cable 80 cm",
+  );
 
   // Quedaron la recta, el gancho y la circular.
   await expect(page.getByTestId("tool-row")).toHaveCount(3);
@@ -182,9 +182,7 @@ test("el hub resume el inventario y sin sesión no se entra", async ({
   browser,
 }) => {
   await signIn(page);
-  await expect(
-    page.getByText("Tenés 2 herramientas guardadas."),
-  ).toBeVisible();
+  await expect(page.getByText("Tenés 2 herramientas guardadas.")).toBeVisible();
 
   const visitor = await browser.newContext();
   const visitorPage = await visitor.newPage();

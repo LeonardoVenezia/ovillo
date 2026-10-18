@@ -1,10 +1,6 @@
 import { es } from "@/messages/es";
 
-import {
-  CROCHET_HOOK_SIZES,
-  formatMm,
-  KNITTING_NEEDLE_SIZES,
-} from "../sizes";
+import { CROCHET_HOOK_SIZES, formatMm, KNITTING_NEEDLE_SIZES } from "../sizes";
 
 /**
  * Tabla de equivalencias de numeración (spec §5.7): la referencia rápida de
@@ -49,7 +45,9 @@ export function EquivalenceTable() {
         />
       </div>
 
-      <p className="text-muted-foreground text-xs">{es.tools.equivalenceNote}</p>
+      <p className="text-muted-foreground text-xs">
+        {es.tools.equivalenceNote}
+      </p>
     </section>
   );
 }
@@ -86,9 +84,7 @@ function SizeTable({
           <tbody>
             {rows.map((row) => (
               <tr key={row.mm} className="border-border border-b last:border-0">
-                <td className="px-3 py-2 font-medium tabular-nums">
-                  {row.mm}
-                </td>
+                <td className="px-3 py-2 font-medium tabular-nums">{row.mm}</td>
                 <td className="px-3 py-2 tabular-nums">{row.us ?? "—"}</td>
                 {columns.length === 3 ? (
                   <td className="px-3 py-2 tabular-nums">{row.uk ?? "—"}</td>

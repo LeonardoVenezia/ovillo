@@ -88,12 +88,16 @@ describe("toolCreateSchema", () => {
       toolCreateSchema.safeParse({ kind: "rectas", sizeMm: 3.3 }).success,
     ).toBe(false);
     expect(
-      toolCreateSchema.safeParse({ kind: "rectas", sizeMm: TOOL_SIZE_MM_MAX + 1 })
-        .success,
+      toolCreateSchema.safeParse({
+        kind: "rectas",
+        sizeMm: TOOL_SIZE_MM_MAX + 1,
+      }).success,
     ).toBe(false);
     expect(
-      toolCreateSchema.safeParse({ kind: "rectas", sizeMm: TOOL_SIZE_MM_MIN / 2 })
-        .success,
+      toolCreateSchema.safeParse({
+        kind: "rectas",
+        sizeMm: TOOL_SIZE_MM_MIN / 2,
+      }).success,
     ).toBe(false);
     expect(
       toolCreateSchema.safeParse({

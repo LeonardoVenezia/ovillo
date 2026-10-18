@@ -16,7 +16,11 @@ import {
   type ToolKind,
   type ToolMaterial,
 } from "@/db/tool-schema";
-import { chipIdle, chipSelected, chipStyles } from "@/features/projects/components/chip-styles";
+import {
+  chipIdle,
+  chipSelected,
+  chipStyles,
+} from "@/features/projects/components/chip-styles";
 import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
 import { es } from "@/messages/es";
@@ -56,9 +60,7 @@ export function ToolsView({ tools }: { tools: ToolItem[] }) {
   const [filter, setFilter] = useState<Filter>("todas");
 
   const visible =
-    filter === "todas"
-      ? tools
-      : tools.filter((item) => item.kind === filter);
+    filter === "todas" ? tools : tools.filter((item) => item.kind === filter);
   const atLimit = tools.length >= TOOLS_PER_USER_MAX;
 
   return (
@@ -98,9 +100,7 @@ export function ToolsView({ tools }: { tools: ToolItem[] }) {
         ) : null}
       </div>
 
-      {creating ? (
-        <ToolForm onDone={() => setCreating(false)} />
-      ) : null}
+      {creating ? <ToolForm onDone={() => setCreating(false)} /> : null}
 
       {tools.length === 0 && !creating ? (
         <EmptyState
@@ -121,7 +121,10 @@ export function ToolsView({ tools }: { tools: ToolItem[] }) {
       ) : null}
 
       {tools.length > 0 && visible.length === 0 ? (
-        <p className="text-muted-foreground text-sm" data-testid="tool-filter-empty">
+        <p
+          className="text-muted-foreground text-sm"
+          data-testid="tool-filter-empty"
+        >
           {es.tools.filterEmpty}
         </p>
       ) : null}
@@ -313,9 +316,7 @@ function ToolForm({ tool, onDone }: { tool?: ToolItem; onDone: () => void }) {
 
   const parsedSize = parseSizeMmInput(size);
   const preview =
-    typeof parsedSize === "number"
-      ? equivalenceLabel(kind, parsedSize)
-      : null;
+    typeof parsedSize === "number" ? equivalenceLabel(kind, parsedSize) : null;
 
   async function submit() {
     if (parsedSize === null || parsedSize === "invalid") {
@@ -397,7 +398,10 @@ function ToolForm({ tool, onDone }: { tool?: ToolItem; onDone: () => void }) {
               type="button"
               aria-pressed={kind === value}
               data-testid={`tool-kind-${value}`}
-              className={cn(chipStyles, kind === value ? chipSelected : chipIdle)}
+              className={cn(
+                chipStyles,
+                kind === value ? chipSelected : chipIdle,
+              )}
               onClick={() => setKind(value)}
             >
               {es.tools.kinds[value]}
@@ -435,7 +439,9 @@ function ToolForm({ tool, onDone }: { tool?: ToolItem; onDone: () => void }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label id={`${idPrefix}-material-label`}>{es.tools.materialLabel}</Label>
+        <Label id={`${idPrefix}-material-label`}>
+          {es.tools.materialLabel}
+        </Label>
         <div
           className="flex flex-wrap gap-2"
           role="group"
@@ -445,7 +451,10 @@ function ToolForm({ tool, onDone }: { tool?: ToolItem; onDone: () => void }) {
             type="button"
             aria-pressed={material === ""}
             data-testid="tool-material-none"
-            className={cn(chipStyles, material === "" ? chipSelected : chipIdle)}
+            className={cn(
+              chipStyles,
+              material === "" ? chipSelected : chipIdle,
+            )}
             onClick={() => setMaterial("")}
           >
             {es.tools.materialNone}
@@ -490,7 +499,9 @@ function ToolForm({ tool, onDone }: { tool?: ToolItem; onDone: () => void }) {
               onChange={(event) => setCable(event.target.value)}
               className="w-32"
             />
-            <p className="text-muted-foreground text-xs">{es.tools.cableHint}</p>
+            <p className="text-muted-foreground text-xs">
+              {es.tools.cableHint}
+            </p>
           </div>
         ) : null}
 
