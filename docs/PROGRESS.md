@@ -137,6 +137,7 @@ Hecho (base de lanas, tramo 1):
 - **Siembra**: `pnpm db:seed-yarns` (idempotente) deja **38 lanas de 9 marcas reales** de AR/MX/ES/CL/CO (LHO, Katia, Lanas Stop, Hilos Omega, TAMM, Revesderecho, Modista, Tren y Desenlace) con datos de catálogos públicos de cada marca; lo que no se pudo confirmar se omite, no se inventa.
 - **Caché**: primer `"use cache"` del proyecto (listas y fichas con `cacheLife("hours")` e invalidación con `updateTag("lanas")` al mutar; D-039).
 - **Calidad**: **125 tests** unitarios (17 nuevos) + **46 e2e** en verde — 8 nuevos (registro con aviso de verificación y confirmación por email, lista con búsqueda sin acentos y filtros combinados, ficha y 404, propuesta con duplicado bloqueado, edición que mantiene el slug y visibilidad pública al instante). La limpieza de usuarios de prueba ahora también borra sus lanas y marcas propuestas. Build verde.
+- **Producción**: commit `9216ce7`, CI en verde y deploy verificado — hub, lista con 38 lanas, búsqueda sin acentos ("sinfonia" → Sinfonía), ficha completa y 404 real de lana inexistente.
 
 Pendientes del tramo (no frenan; siguen):
 - [ ] Moderación de lanas (`sin-revisar` → `aprobada`) y borrado: panel de la Fase 8.

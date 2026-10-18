@@ -51,7 +51,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 
 ## Últimos hitos (para confirmar que estamos al día)
 
-- `3a51b79` — docs: cierre de la Fase 3 y verificación en producción.
-- `8060534` — feat(herramientas): inventario de agujas y ganchos con equivalencias (migración `0005`).
-- `f827c24` — fix(auth): ingreso, registro y salida con recarga completa (D-036).
-- `6968c89` — feat(contador): contador de vueltas local-first (D-035).
+- `9216ce7` — feat(lanas): catálogo base de lanas con propuestas de la comunidad (migración `0006`); CI verde y prod verificado (lista con 38 lanas, ficha, búsqueda sin acentos, 404 real).
+- `fdba23a` — docs(estado): sin hash fijo en el encabezado (evita updates por cada commit).
+- `11aea12` — docs(estado): snapshot vivo para retomar el trabajo en cualquier sesión.
+- `3a51b79` — docs(progreso): cierre de la Fase 3 y verificación en producción.
