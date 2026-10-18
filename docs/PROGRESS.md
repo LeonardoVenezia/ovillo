@@ -1,6 +1,7 @@
 # PROGRESS — Ovillo
 
 Bitácora de construcción por fases (spec §10: cada fase cierra con tests verdes y una nota acá).
+**Para retomar el trabajo, el estado vivo y el próximo paso están en `ESTADO.md`.**
 Última actualización: 2026-10-18
 
 ## Estado general
