@@ -10,7 +10,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 1 — Base del proyecto (deploy en Vercel + base Neon conectada)
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
-- [ ] Fase 4 — Catálogo (lanas y patrones) ← en curso (tramos 1–3 hechos: lanas, patrones, galerías y pulido de búsqueda)
+- [x] Fase 4 — Catálogo (lanas y patrones) — cerrada (tramos 1–3: lanas, patrones, galerías y pulido de búsqueda)
 - [ ] Fase 5 — Mi tejido (parte 2)
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
@@ -169,3 +169,5 @@ Pendientes del tramo (no frenan; siguen):
 - [ ] Valoraciones de patrones (las estrellas de la spec §5.5) y subida de PDF propio.
 - [ ] Galería "hechos por la comunidad" en la ficha de lana: espera `project_yarn` (Fase 5).
 - [ ] Ampliar la siembra de patrones con metraje e idioma cuando haya fuentes verificables (los filtros avanzados ya funcionan; hoy solo los llena lo que propone la comunidad).
+
+Cierre de la fase: commit `e53d4dc` (+ docs del estado), CI en verde y deploy verificado en producción — hub con la tarjeta de proyectos viva, `/explorar/proyectos` con los proyectos demo, galerías "Hechos por la comunidad" en Malu Hat, Bufanda fácil en Fil Piuma y Oso Toño, galería vacía honesta en el Chaleco XL, orden populares y filtros avanzados (metraje/idioma) respondiendo, y las rutas privadas redirigiendo con la vuelta (`?patron=` incluido). Próxima fase: **Fase 5 — Mi tejido (parte 2): inventario de lanas**.

@@ -4,19 +4,19 @@
 > **Se lee al empezar cada sesión y se actualiza al cerrar cada tramo** — aunque la fase no haya terminado, incluso a mitad de una tarea.
 > El histórico completo por fase está en `PROGRESS.md`; las decisiones, en `DECISIONS.md`.
 
-Última actualización: **2026-10-18** · Repo limpio y CI en verde (ver "Últimos hitos" al final)
+Última actualización: **2026-10-18** · Fase 4 (Catálogo) cerrada y verificada en producción; repo limpio y CI en verde (ver "Últimos hitos" al final)
 Producción: <https://ovillo-sepia.vercel.app>
 
 ## Resumen
 
 - Fases **0 a 3 hechas y cerradas**: base del proyecto, cuentas/perfil, y Mi tejido parte 1 (proyectos, diario, fotos, contador de vueltas y herramientas).
-- **Fase 4 — Catálogo, en curso. Tramos 1 y 2 hechos**: catálogo de lanas (38 lanas de 9 marcas reales) y **biblioteca de patrones** (20 patrones gratuitos reales de Revesderecho, Katia y LHO), con fichas, búsqueda con filtros y propuestas de la comunidad (nacen "sin revisar" y visibles al instante). Próximo: **tramo 3 — galerías "hechos por la comunidad" + pulido de búsqueda**.
+- **Fase 4 — Catálogo, cerrada**: tramo 1, catálogo de lanas (38 lanas de 9 marcas reales); tramo 2, **biblioteca de patrones** (20 patrones gratuitos reales de Revesderecho, Katia y LHO) con propuestas de la comunidad; y tramo 3, **vínculo proyecto ↔ patrón con las galerías "hechos por la comunidad"** (ficha del patrón y `/explorar/proyectos`) y **pulido del buscador** (orden relevancia/populares/recientes, filtros avanzados de metraje e idioma y chips de filtros activos).
 - El repo quedó **limpio**: todo pusheado a `main`, CI en verde, deploy verificado en producción.
 
 ## Próximos pasos (en orden)
 
-1. Leer las secciones de la spec a tocar para el tramo 3: §5.5 y §5.6 (galerías "hechos por la comunidad" y búsqueda) y §6 (relaciones que falten). No editar `SPEC.md`.
-2. Fase 4 — Catálogo, tramo 3: **galerías "hechos por la comunidad" y pulido de búsqueda** (relevancia/populares, filtros avanzados). La galería de lanas espera `project_yarn` (Fase 5), igual que la de patrones espera vincular proyectos a patrones. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (la numeración sigue desde D-041).
+1. Fase 4 cerrada (tramos 1–3). Lo que sigue es **Fase 5 — Mi tejido (parte 2): inventario de lanas**. Leer la spec §5.3 (asignar lanas a un proyecto), §5.6 (inventario y "la galería de lanas") y el plan de la fase antes de tocar código; ahí entra `project_yarn` (que además desbloquea la galería de lanas y el filtro "Con mi lana").
+2. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (la numeración sigue desde D-044).
 3. Al cerrar cada tramo: gates (`pnpm typecheck && pnpm lint && pnpm test`; con e2e y `pnpm build` al cerrar fase), actualizar `ESTADO.md` (este archivo) y `PROGRESS.md`, commit + push en español, y verificar el CI (ver "Cómo retomar").
 
 ## Pendientes que dependen del dueño (no frenan el código)
@@ -27,6 +27,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 - [ ] Recorrer `/bienvenida` y el perfil público con su propia cuenta.
 - [ ] Recorrer el catálogo en producción (`/explorar/lanas`): probar la búsqueda y los filtros, y proponer una lana real desde `/explorar/lanas/proponer` (queda visible al instante, con el cartel de "sin revisar").
 - [ ] Recorrer la biblioteca en producción (`/explorar/patrones`): probar la búsqueda y los filtros, abrir una ficha y ver el botón al patrón original, y sumar un patrón real desde `/explorar/patrones/proponer` (se puede sin confirmar el email; queda "sin revisar").
+- [ ] Recorrer las galerías nuevas: `/explorar/proyectos` (búsqueda, técnica y estado) y una ficha de patrón con proyectos, como `/patrones/malu-hat` (galería "Hechos por la comunidad" y botón "Empezar proyecto"); probar también el orden y los filtros avanzados del buscador de patrones (`/explorar/patrones`: orden populares, "Más filtros" con metraje e idioma).
 - [ ] Antes de abrir el registro: `pnpm db:seed-demo --clean` (borra las cuentas demo, D-034) + rama de Neon.
 - [ ] Vercel: el deploy normal sale solo con el push a `main`; no hay CLI autenticada en la máquina (solo el dueño puede tocar cosas del panel).
 
@@ -48,12 +49,12 @@ Producción: <https://ovillo-sepia.vercel.app>
 3. Gates del día a día: `pnpm typecheck && pnpm lint && pnpm test`. Para e2e: `pnpm test:e2e`. Al cerrar fase: `pnpm build`.
 4. Probar prefetching/PPR de verdad: build de producción local (`pnpm build && BETTER_AUTH_URL=http://localhost:3200 pnpm start --port 3200`); el e2e corre en dev y no ve esa clase de bugs (D-036).
 5. Si `pnpm` falla instalando `drizzle-orm`: usar `--registry=https://registry.npmjs.org/` (D-011).
-6. Migraciones: siempre `pnpm db:generate` + `pnpm db:migrate` (nunca `drizzle-kit push`). La base compartida ya tiene aplicadas `0000`–`0007`. Los catálogos base se siembran (o actualizan) con `pnpm db:seed-yarns` y `pnpm db:seed-patterns` (los dos idempotentes).
+6. Migraciones: siempre `pnpm db:generate` + `pnpm db:migrate` (nunca `drizzle-kit push`). La base compartida ya tiene aplicadas `0000`–`0008`. Los catálogos base se siembran (o actualizan) con `pnpm db:seed-yarns` y `pnpm db:seed-patterns`, y el contenido demo con `pnpm db:seed-demo` (los tres idempotentes; la demo enlaza 3 proyectos a patrones reales para que las galerías se vean vivas).
 
 ## Últimos hitos (para confirmar que estamos al día)
 
+- `e53d4dc` — feat(proyectos): vínculo con la biblioteca de patrones, galerías de la comunidad y pulido de búsqueda (migración `0008`); CI verde y prod verificado (`/explorar/proyectos` con los proyectos demo, galerías en Malu Hat / Bufanda fácil en Fil Piuma / Oso Toño, galería vacía honesta en el Chaleco XL, orden populares y filtros avanzados respondiendo, 307 con la vuelta en la ruta privada).
+- `64c9aa7` — docs(estado): tramo 2 de patrones cerrado y verificado en producción.
 - `df706b8` — feat(patrones): biblioteca de patrones con propuestas de la comunidad (migración `0007`); CI verde y prod verificado (lista con 20 patrones, búsqueda sin acentos, filtro crochet, ficha con datos verificados y enlace a la fuente, 404 real).
 - `af0e8f6` — style(formato): repaso de prettier en herramientas.
 - `099e39f` — docs(estado): tramo 1 de lanas cerrado y verificado en producción.
-- `9216ce7` — feat(lanas): catálogo base de lanas con propuestas de la comunidad (migración `0006`); CI verde y prod verificado (lista con 38 lanas, ficha, búsqueda sin acentos, 404 real).
-- `fdba23a` — docs(estado): sin hash fijo en el encabezado (evita updates por cada commit).
