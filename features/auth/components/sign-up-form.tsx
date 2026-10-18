@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { hardNavigate } from "@/lib/navigation";
 import { es } from "@/messages/es";
 
 import { mapAuthError } from "../errors";
@@ -47,7 +47,6 @@ function deriveUsernameStatus(
 }
 
 export function SignUpForm() {
-  const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<UsernameAvailability | null>(
     null,
@@ -118,8 +117,9 @@ export function SignUpForm() {
         return;
       }
       toast.success(es.auth.signUp.welcomeToast);
-      router.push("/bienvenida");
-      router.refresh();
+      // Recarga completa: la sesión acaba de nacer y no hay que reusar nada
+      // prefetcheado de antes del registro (ver `lib/navigation.ts`).
+      hardNavigate("/bienvenida");
     } catch (caught) {
       setFormError(mapAuthError(caught));
     }

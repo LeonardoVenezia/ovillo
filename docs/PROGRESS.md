@@ -104,10 +104,12 @@ Hecho (contador de vueltas, mismo día):
 - **Contador de vueltas** (spec §5.4): hasta 10 contadores por proyecto ("cuerpo", "manga izq.") con nombre y recordatorio opcional *cada N vueltas*. Conteo rápido desde el detalle del proyecto y **pantalla completa** en `/contador/[id]`: botón +1 gigante, −1, reinicio con confirmación en dos pasos, aviso al llegar al múltiplo ("aumentar cada 6") con vibración, pantalla siempre encendida (Wake Lock cuando el navegador lo permite) y flechas ↑/↓ con teclado en escritorio.
 - **Sin conexión de verdad**: cada toque se guarda al instante en el teléfono y sincroniza solo al volver la conexión (versión por contador para resolver conflictos; el registro local no se borra al sincronizar, D-035). La página pública del proyecto no muestra los contadores (son privados).
 - **Modelo**: migración `0004` (`row_counter`, con `version`, `repeat_every` y conteo 0–99999).
+- **Fix de prod (D-036)**: al verificar en producción apareció un bug viejo del ingreso: el prefetch sin sesión cacheaba la redirección de `/mi-tejido` y, tras enviar el formulario, la navegación devolvía al formulario. Ahora ingresar, registrarse y salir navegan con recarga completa (`hardNavigate`), verificado con un build de producción local (donde el prefetching está activo).
 - **Calidad**: **91 tests** unitarios (14 nuevos: topes, recordatorio, resolución de conflictos) + **30 e2e** en verde — 8 nuevos, incluido uno que corta la red de verdad (`setOffline`), cuenta sin conexión y verifica que sincronice al volver. Build verde.
 
 Pendiente de esta fase (próximos tramos):
 - [ ] Herramientas: inventario de agujas y ganchos (medidas con equivalencias).
+- [ ] (Calidad) e2e contra un build de producción (prefetching real): hoy `pnpm test:e2e` corre en dev y no ve esta clase de bugs; sumar un proyecto de Playwright contra `pnpm build` + `pnpm start` (o el deploy de preview).
 - [ ] (Diferido a propósito) Del tramo de fotos: campo de texto alternativo en la UI, `blurhash`, limpieza de imágenes huérfanas, editar entradas guardadas. Del contador: atajo en la hoja *Crear*, notificaciones del recordatorio, contadores compartidos entre proyectos.
 
 Notas:

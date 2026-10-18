@@ -89,6 +89,7 @@ test("conteo rápido: suma desde la lista y queda guardado", async ({
   await expect(row.getByTestId("counter-row-value")).toHaveText("2");
 
   // Cuando el guardado termina, el aviso "Guardando…" se va…
+  await expect(row.getByText("Guardando…")).toBeVisible();
   await expect(row.getByText("Guardando…")).toBeHidden();
 
   // …y al recargar sigue en 2 (llegó al servidor).
@@ -127,11 +128,16 @@ test("pantalla completa: recordatorio cada 6, resta y reinicio", async ({
   await expect(page.getByText("¿Reiniciar el contador a 0?")).toBeVisible();
   await page.getByTestId("counter-reset-yes").click();
   await expect(value).toHaveText("0");
-  await expect(page.getByTestId("counter-sync")).toHaveText("Guardado");
+  // El aviso pasa por "Guardando…" y termina en "Guardado": hay que ver los
+  // dos estados para saber que el guardado pasó de verdad.
+  const pill = page.getByTestId("counter-sync");
+  await expect(pill).toHaveText("Guardando…");
+  await expect(pill).toHaveText("Guardado");
 
   // Al volver al proyecto, la lista muestra el 0 guardado.
   await page.getByRole("link", { name: "Volver al proyecto" }).click();
   await expect(page).toHaveURL(new RegExp(`/mi-tejido/proyectos/${SLUG}$`));
+  await expect(counterRow(page, "Cuerpo")).toBeVisible();
   await expect(
     counterRow(page, "Cuerpo").getByTestId("counter-row-value"),
   ).toHaveText("0");

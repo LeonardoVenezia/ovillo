@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { hardNavigate } from "@/lib/navigation";
 import { safeInternalPath } from "@/lib/safe-redirect";
 import { es } from "@/messages/es";
 
@@ -25,7 +26,6 @@ import { mapAuthError } from "../errors";
 import { signInSchema, type SignInValues } from "../schemas";
 
 export function SignInForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const volver = safeInternalPath(searchParams.get("volver")) ?? "/mi-tejido";
   const [formError, setFormError] = useState<string | null>(null);
@@ -56,8 +56,9 @@ export function SignInForm() {
         return;
       }
       toast.success(es.auth.signIn.welcomeToast);
-      router.push(volver);
-      router.refresh();
+      // Recarga completa a propósito: cambió la sesión y hay que tirar lo
+      // prefetcheado de cuando no había sesión (ver `lib/navigation.ts`).
+      hardNavigate(volver);
     } catch (caught) {
       setFormError(mapAuthError(caught));
     }
