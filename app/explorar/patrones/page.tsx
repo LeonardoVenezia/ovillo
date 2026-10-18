@@ -14,7 +14,13 @@ import {
   PatternFilters,
   type PatternFilterValues,
 } from "@/features/pattern/components/pattern-filters";
-import { listPatterns, parseDifficulty } from "@/features/pattern/queries";
+import {
+  isPatternOrder,
+  parseDifficulty,
+  parseLanguage,
+  parseYardageBucket,
+} from "@/features/pattern/params";
+import { listPatterns } from "@/features/pattern/queries";
 import { es } from "@/messages/es";
 
 export const metadata: Metadata = {
@@ -73,6 +79,9 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
   const rawCategory = readParam(params.categoria);
   const rawDifficulty = readParam(params.dificultad);
   const rawWeight = readParam(params.grosor);
+  const rawLanguage = readParam(params.idioma);
+  const rawYardage = readParam(params.metraje);
+  const rawOrder = readParam(params.orden);
 
   const current: PatternFilterValues = {
     q: readParam(params.q).slice(0, 80),
@@ -80,6 +89,9 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
     category: isPatternCategory(rawCategory) ? rawCategory : "",
     difficulty: parseDifficulty(rawDifficulty) !== null ? rawDifficulty : "",
     weight: isYarnWeight(rawWeight) ? rawWeight : "",
+    language: parseLanguage(rawLanguage) ?? "",
+    yardage: parseYardageBucket(rawYardage) ?? "",
+    order: isPatternOrder(rawOrder) ? rawOrder : "",
   };
 
   const patterns = await listPatterns({
@@ -88,6 +100,9 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
     category: current.category,
     difficulty: current.difficulty,
     weight: current.weight,
+    language: current.language,
+    yardage: current.yardage,
+    order: current.order,
   });
 
   const hasFilters =
@@ -95,7 +110,9 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
     current.craft.length > 0 ||
     current.category.length > 0 ||
     current.difficulty.length > 0 ||
-    current.weight.length > 0;
+    current.weight.length > 0 ||
+    current.language.length > 0 ||
+    current.yardage.length > 0;
 
   return (
     <>

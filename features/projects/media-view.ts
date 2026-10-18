@@ -39,6 +39,15 @@ export function thumbKeyFor(r2Key: string): string {
   return r2Key.replace(/\.jpg$/, "-thumb.jpg");
 }
 
+/**
+ * URL pública de la miniatura de una imagen, o `null` si `R2_PUBLIC_URL`
+ * todavía no está configurada (las tarjetas simplemente no muestran foto).
+ */
+export function thumbUrlFor(r2Key: string): string | null {
+  const publicUrl = getPublicUrl();
+  return publicUrl ? `${publicUrl}/${thumbKeyFor(r2Key)}` : null;
+}
+
 function urlsFor(r2Key: string): Pick<PhotoView, "fullUrl" | "thumbUrl"> {
   const publicUrl = getPublicUrl();
   if (!publicUrl) {

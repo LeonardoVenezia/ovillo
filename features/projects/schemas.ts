@@ -54,6 +54,8 @@ export const projectInputSchema = z.object({
     .min(0, es.projects.errors.progressRange)
     .max(100, es.projects.errors.progressRange)
     .nullable(),
+  /** Patrón de la biblioteca elegido en el selector ("" = sin vincular). */
+  patternId: z.string().trim().max(64, es.projects.errors.patternNotFound),
   patternText: z
     .string()
     .trim()
@@ -108,6 +110,7 @@ export const emptyProjectValues: ProjectFormValues = {
   craft: "",
   status: "tejiendo",
   progress: "",
+  patternId: "",
   patternText: "",
   size: "",
   madeFor: "",

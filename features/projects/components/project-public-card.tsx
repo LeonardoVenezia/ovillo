@@ -3,6 +3,7 @@
 
 import { Lock } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ export function ProjectPublicCard({
   photos: PhotoView[];
   entries: DiaryEntryView[];
 }) {
-  const { project, owner } = data;
+  const { project, owner, linkedPattern } = data;
 
   if (project.visibility === "privado" && !isOwner) {
     return (
@@ -54,10 +55,31 @@ export function ProjectPublicCard({
     photos.find((photo) => photo.imageId === project.coverImageId) ??
     photos.find((photo) => photo.fullUrl !== null);
 
+  // El patrón de la biblioteca se enlaza a su ficha; si además hay texto
+  // libre (cambios propios, notas), se muestra debajo en tono menor.
+  const patternValue: ReactNode = linkedPattern ? (
+    <span className="flex flex-col gap-0.5">
+      <Link
+        href={`/patrones/${linkedPattern.slug}`}
+        className="underline underline-offset-4"
+        data-testid="project-pattern-link"
+      >
+        {linkedPattern.name}
+      </Link>
+      {project.patternText ? (
+        <span className="text-muted-foreground text-xs break-words">
+          {project.patternText}
+        </span>
+      ) : null}
+    </span>
+  ) : (
+    project.patternText
+  );
+
   const details = [
     craftLabel ? { label: es.projects.craftLabel, value: craftLabel } : null,
-    project.patternText
-      ? { label: es.projects.patternLabel, value: project.patternText }
+    patternValue
+      ? { label: es.projects.patternLabel, value: patternValue }
       : null,
     project.size ? { label: es.projects.sizeLabel, value: project.size } : null,
     project.madeFor

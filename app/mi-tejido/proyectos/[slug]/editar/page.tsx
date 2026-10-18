@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { listPatternOptions } from "@/features/pattern/queries";
 import { ProjectForm } from "@/features/projects/components/project-form";
 import { getProjectBySlug } from "@/features/projects/queries";
 import { type ProjectFormValues } from "@/features/projects/schemas";
@@ -32,7 +33,10 @@ export default async function EditProjectPage({ params }: Props) {
 
 async function EditProjectContent({ slug }: { slug: string }) {
   const user = await requireUser();
-  const project = await getProjectBySlug(user.id, slug);
+  const [project, patternOptions] = await Promise.all([
+    getProjectBySlug(user.id, slug),
+    listPatternOptions(),
+  ]);
   if (!project) {
     notFound();
   }
@@ -42,6 +46,7 @@ async function EditProjectContent({ slug }: { slug: string }) {
     craft: project.craft && isCraft(project.craft) ? project.craft : "",
     status: project.status,
     progress: project.progress === null ? "" : String(project.progress),
+    patternId: project.patternId ?? "",
     patternText: project.patternText ?? "",
     size: project.size ?? "",
     madeFor: project.madeFor ?? "",
@@ -63,6 +68,7 @@ async function EditProjectContent({ slug }: { slug: string }) {
         mode="edit"
         projectId={project.id}
         initial={initial}
+        patternOptions={patternOptions}
         cancelHref={`/mi-tejido/proyectos/${project.slug}`}
       />
     </>

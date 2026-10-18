@@ -16,6 +16,11 @@ export function PatternCard({ item }: { item: PatternListItem }) {
   const meta = [
     item.difficulty !== null ? difficultyLabel(item.difficulty) : null,
     item.yarnWeight ? weightLabel(item.yarnWeight) : null,
+    item.projectCount > 0
+      ? item.projectCount === 1
+        ? es.patterns.madeOne
+        : es.patterns.madeMany.replace("{count}", String(item.projectCount))
+      : null,
   ]
     .filter((part): part is string => part !== null && part.length > 0)
     .join(" · ");

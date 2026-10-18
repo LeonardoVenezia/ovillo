@@ -20,8 +20,10 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { selectStyles } from "@/components/select-styles";
 import { PROJECT_STATUSES } from "@/db/project-schema";
 import { CRAFT_SLUGS, type Craft } from "@/features/profile/constants";
+import type { PatternOption } from "@/features/pattern/queries";
 import { cn } from "@/lib/utils";
 import { es } from "@/messages/es";
 
@@ -82,11 +84,14 @@ export function ProjectForm({
   mode,
   projectId,
   initial,
+  patternOptions,
   cancelHref,
 }: {
   mode: "create" | "edit";
   projectId?: string;
   initial: ProjectFormValues;
+  /** Patrones de la biblioteca para vincular (spec §5.3). */
+  patternOptions: PatternOption[];
   cancelHref: string;
 }) {
   const router = useRouter();
@@ -181,6 +186,28 @@ export function ProjectForm({
           />
         </FieldSet>
 
+        <Field>
+          <FieldLabel htmlFor="patternId">
+            {es.projects.patternLibraryLabel}
+          </FieldLabel>
+          <select
+            id="patternId"
+            data-testid="project-pattern-select"
+            className={selectStyles}
+            {...form.register("patternId")}
+          >
+            <option value="">{es.projects.patternLibraryNone}</option>
+            {patternOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.designerName
+                  ? `${option.name} · ${option.designerName}`
+                  : option.name}
+              </option>
+            ))}
+          </select>
+          <FieldDescription>{es.projects.patternLibraryHint}</FieldDescription>
+        </Field>
+
         <div className="grid gap-5 sm:grid-cols-2">
           <Field data-invalid={errors.progress ? true : undefined}>
             <FieldLabel htmlFor="progress">
@@ -216,7 +243,7 @@ export function ProjectForm({
 
           <Field data-invalid={errors.patternText ? true : undefined}>
             <FieldLabel htmlFor="patternText">
-              {es.projects.patternLabel}
+              {es.projects.patternTextLabel}
             </FieldLabel>
             <Input
               id="patternText"

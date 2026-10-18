@@ -12,6 +12,7 @@ import {
 
 import { user } from "./auth-schema";
 import { image } from "./media-schema";
+import { pattern } from "./pattern-schema";
 import type { ProfileVisibility } from "./profile-schema";
 
 /**
@@ -55,7 +56,11 @@ export const project = pgTable(
     status: text("status").$type<ProjectStatus>().notNull().default("tejiendo"),
     /** Progreso manual 0–100 (spec §5.3); `null` = sin barrita. */
     progress: integer("progress"),
-    /** Patrón como texto libre o enlace hasta que exista la biblioteca. */
+    /** Patrón de la biblioteca que sigue el proyecto (spec §5.3). */
+    patternId: text("pattern_id").references(() => pattern.id, {
+      onDelete: "set null",
+    }),
+    /** Patrón como texto libre o enlace (cuando no está en la biblioteca). */
     patternText: text("pattern_text"),
     size: text("size"),
     madeFor: text("made_for"),
@@ -85,6 +90,8 @@ export const project = pgTable(
   (table) => [
     uniqueIndex("project_user_slug_idx").on(table.userId, table.slug),
     index("project_user_created_idx").on(table.userId, table.createdAt),
+    // Galería "hechos por la comunidad" (spec §5.5): proyectos por patrón.
+    index("project_pattern_idx").on(table.patternId),
   ],
 );
 

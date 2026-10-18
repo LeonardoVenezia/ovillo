@@ -38,7 +38,7 @@ import {
   type PatternFieldErrors,
   type PatternFormState,
 } from "../schemas";
-import { selectStyles } from "./select-styles";
+import { selectStyles } from "@/components/select-styles";
 
 /**
  * Formulario de propuesta y edición de un patrón (spec §5.5).

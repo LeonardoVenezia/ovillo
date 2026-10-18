@@ -2,8 +2,10 @@
 
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq, isNull, like } from "drizzle-orm";
+import { updateTag } from "next/cache";
 
 import { getDb } from "@/db";
+import { pattern } from "@/db/pattern-schema";
 import {
   isProjectStatus,
   project,
@@ -69,6 +71,25 @@ async function getOwnProject(userId: string, id: string) {
   return rows[0] ?? null;
 }
 
+/**
+ * Resuelve el patrón elegido contra la biblioteca. Devuelve `null` cuando no
+ * hay nada que vincular y `"invalid"` si el id no existe (lista manipulada).
+ */
+async function resolvePatternId(
+  value: string,
+): Promise<string | null | "invalid"> {
+  if (value.length === 0) {
+    return null;
+  }
+  const rows = await getDb()
+    .select({ id: pattern.id })
+    .from(pattern)
+    .where(eq(pattern.id, value))
+    .limit(1);
+
+  return rows[0]?.id ?? "invalid";
+}
+
 export async function createProject(
   input: unknown,
 ): Promise<ProjectActionResult> {
@@ -79,6 +100,11 @@ export async function createProject(
   }
 
   const data = parsed.data;
+  const patternId = await resolvePatternId(data.patternId);
+  if (patternId === "invalid") {
+    return { ok: false, error: es.projects.errors.patternNotFound };
+  }
+
   const slug = await uniqueSlug(user.id, data.name);
 
   await getDb()
@@ -90,6 +116,7 @@ export async function createProject(
       craft: data.craft || null,
       status: data.status,
       progress: data.progress,
+      patternId,
       patternText: data.patternText || null,
       size: data.size || null,
       madeFor: data.madeFor || null,
@@ -99,6 +126,10 @@ export async function createProject(
       notes: data.notes || null,
       visibility: data.visibility,
     });
+
+  // La biblioteca muestra "N proyectos hechos" y el orden populares: que
+  // refleje el alta de una vez.
+  updateTag("patrones");
 
   return { ok: true, slug };
 }
@@ -119,6 +150,11 @@ export async function updateProject(
   }
 
   const data = parsed.data;
+  const patternId = await resolvePatternId(data.patternId);
+  if (patternId === "invalid") {
+    return { ok: false, error: es.projects.errors.patternNotFound };
+  }
+
   await getDb()
     .update(project)
     .set({
@@ -126,6 +162,7 @@ export async function updateProject(
       craft: data.craft || null,
       status: data.status,
       progress: data.progress,
+      patternId,
       patternText: data.patternText || null,
       size: data.size || null,
       madeFor: data.madeFor || null,
@@ -139,6 +176,8 @@ export async function updateProject(
       visibility: data.visibility,
     })
     .where(eq(project.id, existing.id));
+
+  updateTag("patrones");
 
   return { ok: true, slug: existing.slug };
 }
@@ -182,6 +221,8 @@ export async function deleteProject(id: string): Promise<ProjectActionResult> {
     .update(project)
     .set({ deletedAt: new Date() })
     .where(eq(project.id, existing.id));
+
+  updateTag("patrones");
 
   return { ok: true, slug: existing.slug };
 }

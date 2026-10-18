@@ -94,6 +94,36 @@ test("catálogo público: hub, lista, búsqueda sin acentos y filtros", async ({
   await visitor.close();
 });
 
+test("orden y filtros avanzados: populares, idioma y chips activos", async ({
+  browser,
+}) => {
+  const visitor = await browser.newContext();
+  const page = await visitor.newPage();
+
+  await page.goto("/explorar/patrones");
+  await expect(page.getByTestId("patterns-count")).toHaveText("20 patrones");
+
+  // El orden por defecto es recientes; populares no pierde patrones.
+  await page.getByTestId("pattern-order").selectOption("populares");
+  await expect(page.getByTestId("patterns-count")).toHaveText("20 patrones");
+  await expect(page.getByTestId("pattern-card").first()).toBeVisible();
+
+  // Los filtros avanzados están detrás de "Más filtros".
+  await page.getByTestId("pattern-more-filters").click();
+  await expect(page.getByTestId("pattern-advanced")).toBeVisible();
+
+  // Idioma: la siembra está en español, en inglés todavía no hay nada…
+  await page.getByTestId("pattern-filter-idioma").selectOption("en");
+  await expect(page.getByText("No encontramos patrones así")).toBeVisible();
+
+  // …y el chip del filtro activo lo quita de un toque.
+  await expect(page.getByTestId("pattern-active-language")).toBeVisible();
+  await page.getByTestId("pattern-active-language").click();
+  await expect(page.getByTestId("patterns-count")).toHaveText("20 patrones");
+
+  await visitor.close();
+});
+
 test("ficha: datos verificados, enlace a la fuente y el 404 real de un patrón que no existe", async ({
   browser,
 }) => {
@@ -122,6 +152,13 @@ test("ficha: datos verificados, enlace a la fuente y el 404 real de un patrón q
 
   await page.goto("/patrones/no-existe");
   await expect(page.getByText("Acá no hay nada tejido todavía")).toBeVisible();
+
+  // Sin proyectos vinculados, la galería lo dice con todas las letras.
+  await page.goto("/patrones/chaleco-xl");
+  await expect(
+    page.getByRole("heading", { name: "Hechos por la comunidad" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("pattern-community-empty")).toBeVisible();
 
   await visitor.close();
 });
@@ -198,6 +235,14 @@ test("la propuesta se ve al instante para el público", async ({ browser }) => {
   // Y aparece en la lista pública, filtrable por grosor.
   await page.goto("/explorar/patrones");
   await page.getByTestId("pattern-filter-grosor").selectOption("worsted");
+  await expect(page.getByTestId("patterns-count")).toHaveText("1 patrón");
+  await expect(
+    page.getByTestId("pattern-card").filter({ hasText: PATTERN_NAME }),
+  ).toBeVisible();
+
+  // Es el único con metraje cargado, así que el tramo avanzado lo encuentra.
+  await page.getByTestId("pattern-more-filters").click();
+  await page.getByTestId("pattern-filter-metraje").selectOption("hasta-400");
   await expect(page.getByTestId("patterns-count")).toHaveText("1 patrón");
   await expect(
     page.getByTestId("pattern-card").filter({ hasText: PATTERN_NAME }),

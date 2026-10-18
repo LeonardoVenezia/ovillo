@@ -48,6 +48,7 @@ describe("projectInputSchema", () => {
     craft: "dos-agujas",
     status: "tejiendo",
     progress: 40,
+    patternId: "",
     patternText: "",
     size: "",
     madeFor: "",
@@ -91,6 +92,16 @@ describe("projectInputSchema", () => {
     ).toBe(false);
     expect(
       projectInputSchema.safeParse({ ...base, tags: ["a".repeat(25)] }).success,
+    ).toBe(false);
+  });
+
+  it("acepta un patrón de la biblioteca y rechaza ids absurdamente largos", () => {
+    expect(
+      projectInputSchema.safeParse({ ...base, patternId: "abc123" }).success,
+    ).toBe(true);
+    expect(
+      projectInputSchema.safeParse({ ...base, patternId: "x".repeat(65) })
+        .success,
     ).toBe(false);
   });
 });

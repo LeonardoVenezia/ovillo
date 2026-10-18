@@ -36,7 +36,7 @@ import {
   type YarnFieldErrors,
   type YarnFormState,
 } from "../schemas";
-import { selectStyles } from "./select-styles";
+import { selectStyles } from "@/components/select-styles";
 
 /**
  * Formulario de propuesta y edición de una lana (spec §5.6).

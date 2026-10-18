@@ -18,7 +18,7 @@ import { es } from "@/messages/es";
 
 import { fiberLabel, weightLabel } from "../format";
 import type { YarnBrandOption } from "../queries";
-import { selectStyles } from "./select-styles";
+import { selectStyles } from "@/components/select-styles";
 
 /**
  * Filtros del catálogo de lanas (spec §5.6): búsqueda por nombre o marca,

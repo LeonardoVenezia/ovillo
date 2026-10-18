@@ -10,7 +10,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 1 — Base del proyecto (deploy en Vercel + base Neon conectada)
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
-- [ ] Fase 4 — Catálogo (lanas y patrones) ← en curso (tramos 1–2 hechos: base de lanas y patrones)
+- [ ] Fase 4 — Catálogo (lanas y patrones) ← en curso (tramos 1–3 hechos: lanas, patrones, galerías y pulido de búsqueda)
 - [ ] Fase 5 — Mi tejido (parte 2)
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
@@ -128,7 +128,7 @@ Notas:
 
 ## Fase 4 — Catálogo (2026-10-18 → )
 
-Tramos: 1) **base de lanas** (hecho) · 2) **patrones** (hecho) · 3) galerías "hechos por la comunidad" + pulido de búsqueda.
+Tramos: 1) **base de lanas** (hecho) · 2) **patrones** (hecho) · 3) **galerías "hechos por la comunidad" + pulido de búsqueda** (hecho).
 
 Hecho (base de lanas, tramo 1):
 - **Modelo** (spec §5.6/§6, migración `0006`): `yarn_brand` (nombre, slug único, país) y `yarn` con grosor estándar (lace…super-bulky), composición JSON que suma 100, ovillo (g/m) y agujas como rango ("4,5–5 mm"). Duplicados por marca sin acentos (índice único funcional). Ver D-038.
@@ -154,5 +154,18 @@ Hecho (patrones, tramo 2):
 
 Pendientes del tramo (no frenan; siguen):
 - [ ] Moderación de patrones (`sin-revisar` → `aprobada`) y borrado: panel de la Fase 8.
-- [ ] Galería "hechos por la comunidad" en la ficha del patrón, valoraciones y subida de PDF propio: tramos siguientes (las columnas ya están reservadas).
-- [ ] Tramo 3: galerías "hechos por la comunidad" y pulido de búsqueda (relevancia/populares, filtros avanzados).
+- [x] Galería "hechos por la comunidad" en la ficha del patrón: hecha en el tramo 3 (D-042). Valoraciones y subida de PDF propio siguen pendientes (columnas reservadas).
+
+Hecho (galerías y pulido de búsqueda, tramo 3):
+- **Vínculo proyecto ↔ patrón** (spec §5.3/§6, migración `0008`): `project.pattern_id` nullable con FK (`on delete set null`) e índice `project_pattern_idx`; `pattern_text` sigue como texto libre o enlace para los patrones que no están en la biblioteca. Selector en el formulario de proyecto (`listPatternOptions`, cacheado) y botón **"Empezar proyecto"** en la ficha del patrón (`/mi-tejido/proyectos/nuevo?patron=slug`, con el select prellenado; sin sesión el proxy manda a ingresar). El servidor revalida el id contra la base. Ver D-042.
+- **Galería "Hechos por la comunidad"** en la ficha del patrón (`Suspense`, sin caché: mira la sesión): proyectos públicos + los propios (los privados se marcan "Solo para mí"), con portada, autora y estado; los terminados van primero. La tarjeta (`CommunityProjectCard`) queda lista para reutilizar en la galería de lanas (Fase 5).
+- **Galería pública `/explorar/proyectos`** (reemplaza el placeholder): búsqueda sin acentos por nombre, chips de técnica, estado y "Ver más" (`?mostrar=`, ventana de 24, tope 480); la tarjeta del hub de `/explorar` quedó viva. Ver D-043.
+- **Pulido del buscador de patrones**: orden `?orden=` (relevancia con `ts_rank` por defecto si hay búsqueda, populares por cantidad de proyectos públicos, recientes por defecto), panel "Más filtros" con metraje (tramos `hasta-400 | 400-800 | mas-800`) e idioma, chips de filtros activos removibles y "N proyectos" en la tarjeta del listado. Diferidos con motivo: galga (texto libre, no comparable) y "gratuito/enlace" (todo el catálogo lo es por D-040). Ver D-043.
+- **Páginas propias**: el patrón de la biblioteca se muestra enlazado a su ficha en la página pública del proyecto y en la de la dueña (el texto libre queda debajo, si lo hay).
+- **Siembra demo**: 3 de los 12 proyectos demo quedan vinculados a patrones reales (bufanda → Bufanda fácil en Fil Piuma; gorro → Malu Hat; amigurumi → Oso Toño) para que las galerías se vean vivas.
+- **Calidad**: **147 tests** unitarios (7 nuevos: parsers de orden/metraje/idioma y validación del vínculo) + **55 e2e** en verde — 3 nuevos (empezar desde un patrón con el select prellenado y la galería mostrándolo sin sesión, la galería pública con búsqueda y estado, y orden/filtros avanzados con chip removible). Build verde.
+
+Pendientes del tramo (no frenan; siguen):
+- [ ] Valoraciones de patrones (las estrellas de la spec §5.5) y subida de PDF propio.
+- [ ] Galería "hechos por la comunidad" en la ficha de lana: espera `project_yarn` (Fase 5).
+- [ ] Ampliar la siembra de patrones con metraje e idioma cuando haya fuentes verificables (los filtros avanzados ya funcionan; hoy solo los llena lo que propone la comunidad).

@@ -3,7 +3,10 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * Proyectos de punta a punta (spec §5.3): se crea con lo mínimo, aparece en
  * Mi tejido y en el perfil público, cambia de estado y respeta la
- * privacidad. Usa su propia cuenta para no depender de otros tests.
+ * privacidad. También cubre el vínculo con la biblioteca de patrones
+ * (spec §5.5): empezar desde un patrón y verlo en la galería de la
+ * comunidad, y la galería pública de proyectos (`/explorar/proyectos`).
+ * Usa su propia cuenta para no depender de otros tests.
  */
 
 const NAME = "Prueba Proyectos";
@@ -12,6 +15,10 @@ const USERNAME = "e2eproyectos";
 const PASSWORD = "tejido-e2e-1234";
 const PROJECT = "Gorro e2e";
 const SLUG = "gorro-e2e";
+/** Proyecto que nace vinculado a un patrón de la siembra. */
+const PATTERN_PROJECT = "Gorro con patrón";
+const PATTERN_PROJECT_SLUG = "gorro-con-patron";
+const PATTERN_SLUG = "malu-hat";
 
 test.describe.configure({ mode: "serial" });
 
@@ -53,6 +60,52 @@ test("crear: con el nombre alcanza y queda en Mi tejido", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: new RegExp(PROJECT) }),
   ).toBeVisible();
+});
+
+test("desde un patrón: empezar proyecto lo vincula y aparece en la galería", async ({
+  page,
+  browser,
+}) => {
+  await signIn(page);
+
+  // "Empezar proyecto" en la ficha abre el formulario con el patrón elegido.
+  await page.goto(`/patrones/${PATTERN_SLUG}`);
+  await page.getByTestId("pattern-start-project").click();
+  await expect(page).toHaveURL(
+    new RegExp(`/mi-tejido/proyectos/nuevo\\?patron=${PATTERN_SLUG}$`),
+  );
+  await expect(page.locator("#patternId option:checked")).toContainText(
+    "Malu Hat",
+  );
+
+  await page.getByLabel("Nombre").fill(PATTERN_PROJECT);
+  await page.getByRole("button", { name: "Crear proyecto" }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`/mi-tejido/proyectos/${PATTERN_PROJECT_SLUG}$`),
+  );
+  // La página propia enlaza a la ficha del patrón.
+  await expect(page.getByTestId("project-pattern-link")).toHaveAttribute(
+    "href",
+    `/patrones/${PATTERN_SLUG}`,
+  );
+
+  // Y cualquiera lo ve en "Hechos por la comunidad", sin sesión.
+  const visitor = await browser.newContext();
+  const visitorPage = await visitor.newPage();
+  await visitorPage.goto(`/patrones/${PATTERN_SLUG}`);
+  await expect(
+    visitorPage.getByRole("heading", { name: "Hechos por la comunidad" }),
+  ).toBeVisible();
+  const card = visitorPage
+    .getByTestId("community-project-card")
+    .filter({ hasText: PATTERN_PROJECT });
+  await expect(card).toBeVisible();
+  await card.click();
+  await expect(visitorPage).toHaveURL(new RegExp(`${PATTERN_PROJECT_SLUG}$`));
+  await expect(
+    visitorPage.getByRole("heading", { name: PATTERN_PROJECT }),
+  ).toBeVisible();
+  await visitor.close();
 });
 
 test("estado: se marca terminado y la página lo refleja", async ({ page }) => {
@@ -112,6 +165,37 @@ test("público: se ve sin sesión y el cambio a privado se respeta", async ({
     visitorPage2.getByRole("heading", { name: PROJECT }),
   ).toHaveCount(0);
   await visitor2.close();
+});
+
+test("explorar: la galería pública filtra por nombre y estado", async ({
+  browser,
+}) => {
+  const visitor = await browser.newContext();
+  const page = await visitor.newPage();
+
+  // El hub lleva a la galería de proyectos y muestra tarjetas.
+  await page.goto("/explorar");
+  await page.getByTestId("explore-proyectos-card").click();
+  await expect(page).toHaveURL(/\/explorar\/proyectos$/);
+  await expect(
+    page.getByTestId("community-project-card").first(),
+  ).toBeVisible();
+
+  // La búsqueda encuentra el proyecto por su nombre.
+  await page.getByTestId("community-search").fill(PATTERN_PROJECT);
+  await expect(page.getByTestId("community-projects-count")).toHaveText(
+    "1 proyecto",
+  );
+
+  // Con un estado que no es el suyo no queda nada, y limpiar vuelve atrás.
+  await page.getByTestId("community-filter-estado").selectOption("terminado");
+  await expect(page.getByText("No encontramos proyectos así")).toBeVisible();
+  await page.getByTestId("community-clear-filters").click();
+  await expect(
+    page.getByTestId("community-project-card").first(),
+  ).toBeVisible();
+
+  await visitor.close();
 });
 
 test("un proyecto que no existe da 404", async ({ page }) => {

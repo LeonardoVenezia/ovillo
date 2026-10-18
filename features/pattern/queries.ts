@@ -10,9 +10,18 @@ import {
   type PatternLanguage,
   type PatternStatus,
 } from "@/db/pattern-schema";
+import { project } from "@/db/project-schema";
 import { isYarnWeight, type YarnWeight } from "@/db/yarn-schema";
 import { isCraft, type Craft } from "@/features/profile/constants";
+import { likeContains } from "@/lib/search";
 import { normalizeText } from "@/lib/slug";
+
+import {
+  parseDifficulty,
+  parseLanguage,
+  parseYardageBucket,
+  resolvePatternOrder,
+} from "./params";
 
 /**
  * Consultas de la biblioteca de patrones (spec §5.5).
@@ -37,6 +46,12 @@ export type PatternFilters = {
   /** Dificultad 1–5, como texto de la URL. */
   difficulty?: string;
   weight?: string;
+  /** Idioma del patrón (`es`, `en`, `pt`, `otro`). */
+  language?: string;
+  /** Tramo de metraje (`hasta-400`, `400-800`, `mas-800`). */
+  yardage?: string;
+  /** Orden explícito (`relevancia`, `populares`, `recientes`). */
+  order?: string;
 };
 
 export type PatternListItem = {
@@ -49,9 +64,11 @@ export type PatternListItem = {
   difficulty: number | null;
   yarnWeight: YarnWeight | null;
   status: PatternStatus;
+  /** Proyectos públicos hechos con este patrón (spec §5.5). */
+  projectCount: number;
 };
 
-export type PatternDetail = PatternListItem & {
+export type PatternDetail = Omit<PatternListItem, "projectCount"> & {
   language: PatternLanguage;
   sourceUrl: string;
   yardageMin: number | null;
@@ -76,24 +93,27 @@ const patternColumns = {
   status: pattern.status,
 };
 
-/** Escapa los comodines de LIKE: una búsqueda siempre es texto literal. */
-function likePattern(query: string): string {
-  return `%${query.replace(/[\\%_]/g, (match) => `\\${match}`)}%`;
-}
+/**
+ * Cuántos proyectos públicos (y sin borrar) están hechos con cada patrón:
+ * alimenta el orden "populares" y el dato que muestra la tarjeta.
+ */
+const countPublicProjects = sql<number>`(
+  select count(*)::int
+  from ${project}
+  where ${project.patternId} = ${pattern.id}
+    and ${project.visibility} = 'publico'
+    and ${project.deletedAt} is null
+)`.as("project_count");
 
-/** Dificultad válida de la URL, o `null` para no filtrar. */
-export function parseDifficulty(value: string): number | null {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 5) {
-    return null;
-  }
-  return parsed;
+/** Puntaje de relevancia del buscador (spec §6) para la consulta dada. */
+function rankFor(query: string) {
+  return sql<number>`ts_rank(${pattern.searchVector}, websearch_to_tsquery('spanish', ${query}))`;
 }
 
 /**
- * Patrones de la biblioteca, de los más nuevos a los más viejos. Incluye los
- * `sin-revisar` (spec §5.5: la propuesta queda visible al instante), marcados
- * en la interfaz.
+ * Patrones de la biblioteca, con los `sin-revisar` incluidos (spec §5.5: la
+ * propuesta queda visible al instante, marcada en la interfaz). El orden por
+ * defecto es recientes; con búsqueda, relevancia (spec §5.5).
  */
 export async function listPatterns(
   filters: PatternFilters = {},
@@ -106,7 +126,7 @@ export async function listPatterns(
 
   const query = normalizeText(filters.q ?? "").slice(0, 80);
   if (query.length > 0) {
-    const like = likePattern(query);
+    const like = likeContains(query);
     conditions.push(
       or(
         sql`${pattern.searchVector} @@ websearch_to_tsquery('spanish', ${query})`,
@@ -136,12 +156,68 @@ export async function listPatterns(
   if (filters.weight && isYarnWeight(filters.weight)) {
     conditions.push(eq(pattern.yarnWeight, filters.weight));
   }
+  const language = filters.language ? parseLanguage(filters.language) : null;
+  if (language !== null) {
+    conditions.push(eq(pattern.language, language));
+  }
+  const yardage = filters.yardage ? parseYardageBucket(filters.yardage) : null;
+  if (yardage !== null) {
+    const total = sql`coalesce(${pattern.yardageMax}, ${pattern.yardageMin})`;
+    conditions.push(
+      yardage === "hasta-400"
+        ? sql`${total} <= 400`
+        : yardage === "400-800"
+          ? sql`${total} > 400 and ${total} <= 800`
+          : sql`${total} > 800`,
+    );
+  }
+
+  const order = resolvePatternOrder(filters.order ?? "", query.length > 0);
 
   return getDb()
-    .select(patternColumns)
+    .select({ ...patternColumns, projectCount: countPublicProjects })
     .from(pattern)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(pattern.createdAt), asc(pattern.name));
+    .orderBy(
+      ...(order === "relevancia"
+        ? [desc(rankFor(query)), desc(pattern.createdAt), asc(pattern.name)]
+        : order === "populares"
+          ? [
+              desc(countPublicProjects),
+              desc(pattern.createdAt),
+              asc(pattern.name),
+            ]
+          : [desc(pattern.createdAt), asc(pattern.name)]),
+    );
+}
+
+export type PatternOption = {
+  id: string;
+  slug: string;
+  name: string;
+  designerName: string | null;
+};
+
+/**
+ * Opciones para vincular un proyecto a un patrón de la biblioteca (el
+ * selector del formulario de proyectos). Es la lista corta que necesita un
+ * `<select>`; cuando la biblioteca crezca va a pedir un buscador con
+ * escriba-y-elija.
+ */
+export async function listPatternOptions(): Promise<PatternOption[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("patrones");
+
+  return getDb()
+    .select({
+      id: pattern.id,
+      slug: pattern.slug,
+      name: pattern.name,
+      designerName: pattern.designerName,
+    })
+    .from(pattern)
+    .orderBy(asc(pattern.name));
 }
 
 /** Un patrón por su slug (`/patrones/slug`). */

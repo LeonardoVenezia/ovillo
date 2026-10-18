@@ -142,23 +142,41 @@ async function ProjectDetail({ slug }: { slug: string }) {
         </div>
       ) : null}
 
-      {project.patternText ? (
-        <div className="flex flex-col gap-0.5 text-sm">
+      {project.linkedPattern || project.patternText ? (
+        <div
+          className="flex flex-col gap-0.5 text-sm"
+          data-testid="project-pattern"
+        >
           <span className="text-muted-foreground text-xs">
             {es.projects.patternLabel}
           </span>
-          {/^https?:\/\//.test(project.patternText) ? (
-            <a
-              href={project.patternText}
-              target="_blank"
-              rel="noreferrer"
+          {project.linkedPattern ? (
+            <Link
+              href={`/patrones/${project.linkedPattern.slug}`}
               className="underline underline-offset-4"
+              data-testid="project-pattern-link"
             >
-              {project.patternText}
-            </a>
-          ) : (
-            <span className="break-words">{project.patternText}</span>
-          )}
+              {project.linkedPattern.name}
+            </Link>
+          ) : null}
+          {project.patternText ? (
+            project.linkedPattern ? (
+              <span className="text-muted-foreground text-xs break-words">
+                {project.patternText}
+              </span>
+            ) : /^https?:\/\//.test(project.patternText) ? (
+              <a
+                href={project.patternText}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-4"
+              >
+                {project.patternText}
+              </a>
+            ) : (
+              <span className="break-words">{project.patternText}</span>
+            )
+          ) : null}
         </div>
       ) : null}
 

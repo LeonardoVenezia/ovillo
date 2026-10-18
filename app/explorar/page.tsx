@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { BookOpen, Package, Shirt } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
 import { es } from "@/messages/es";
 
 export const metadata: Metadata = {
@@ -10,10 +9,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * Explorar (spec §9): la puerta a patrones, proyectos y lanas. Lanas y
- * patrones ya están abiertas; proyectos llega en el próximo tramo de la
- * Fase 4, así que su tarjeta avisa "próximamente" en vez de llevar a una
- * página vacía.
+ * Explorar (spec §9): la puerta a patrones, proyectos y lanas. Las tres
+ * galerías ya están abiertas.
  */
 export default function ExplorePage() {
   return (
@@ -41,6 +38,8 @@ export default function ExplorePage() {
           body={es.explore.patronesBody}
         />
         <ExploreCard
+          href="/explorar/proyectos"
+          testId="explore-proyectos-card"
           icon={Shirt}
           title={es.explore.proyectosTitle}
           body={es.explore.proyectosBody}
@@ -57,40 +56,23 @@ function ExploreCard({
   title,
   body,
 }: {
-  href?: string;
-  testId?: string;
+  href: string;
+  testId: string;
   icon: typeof Package;
   title: string;
   body: string;
 }) {
-  const content = (
-    <>
-      <span className="flex items-center justify-between gap-2">
-        <span className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full">
-          <Icon className="size-5" strokeWidth={1.5} aria-hidden="true" />
-        </span>
-        {href ? null : <Badge variant="outline">{es.explore.soon}</Badge>}
-      </span>
-      <span className="font-heading text-lg font-semibold">{title}</span>
-      <span className="text-muted-foreground text-sm">{body}</span>
-    </>
-  );
-
-  if (!href) {
-    return (
-      <div className="border-border bg-card/60 flex flex-col gap-2 rounded-2xl border border-dashed p-4">
-        {content}
-      </div>
-    );
-  }
-
   return (
     <Link
       href={href}
       data-testid={testId}
       className="border-border bg-card hover:bg-muted/40 focus-visible:outline-ring flex flex-col gap-2 rounded-2xl border p-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
-      {content}
+      <span className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full">
+        <Icon className="size-5" strokeWidth={1.5} aria-hidden="true" />
+      </span>
+      <span className="font-heading text-lg font-semibold">{title}</span>
+      <span className="text-muted-foreground text-sm">{body}</span>
     </Link>
   );
 }

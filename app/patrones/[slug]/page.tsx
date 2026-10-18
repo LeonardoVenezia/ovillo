@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { weightLabel } from "@/features/yarn/format";
 import {
   categoryLabel,
@@ -15,6 +16,7 @@ import {
   formatYardage,
   languageLabel,
 } from "@/features/pattern/format";
+import { PatternCommunityProjects } from "@/features/projects/components/pattern-community";
 import { getPatternBySlug } from "@/features/pattern/queries";
 import { getOptionalUser } from "@/lib/session";
 import { es } from "@/messages/es";
@@ -23,10 +25,10 @@ import { es } from "@/messages/es";
  * Ficha pública de un patrón (spec §5.5, `/patrones/slug`).
  *
  * El proxy ya chequeó que exista (para poder responder 404 de verdad, D-023).
- * Los datos salen del caché compartido de la biblioteca. La galería "hechos
- * por la comunidad" y las valoraciones llegan cuando los proyectos se puedan
- * vincular a un patrón (Fase 5); el botón principal lleva a donde el patrón
- * está publicado.
+ * Los datos salen del caché compartido de la biblioteca; la galería "Hechos
+ * por la comunidad" va aparte, en `Suspense`, porque mira la sesión y los
+ * proyectos del momento. Las valoraciones de la comunidad llegan más
+ * adelante; el botón principal lleva a donde el patrón está publicado.
  */
 
 export const instant = false;
@@ -96,7 +98,7 @@ export default async function PatternPage({ params }: Props) {
         </div>
       </div>
 
-      <div>
+      <div className="flex flex-wrap gap-3">
         <Button asChild>
           <a
             href={data.sourceUrl}
@@ -107,6 +109,14 @@ export default async function PatternPage({ params }: Props) {
             {es.patterns.sourceCta}
             <ExternalLink aria-hidden="true" />
           </a>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link
+            href={`/mi-tejido/proyectos/nuevo?patron=${data.slug}`}
+            data-testid="pattern-start-project"
+          >
+            {es.patterns.startCta}
+          </Link>
         </Button>
       </div>
 
@@ -179,6 +189,10 @@ export default async function PatternPage({ params }: Props) {
           </div>
         ) : null}
       </dl>
+
+      <Suspense fallback={<Skeleton className="h-48 w-full rounded-2xl" />}>
+        <PatternCommunityProjects patternId={data.id} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <OwnerEditLink createdBy={data.createdBy} slug={slug} />

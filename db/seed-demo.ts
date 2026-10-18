@@ -17,6 +17,7 @@ import { tool, type ToolKind, type ToolMaterial } from "./tool-schema";
 import { getDb } from "./index";
 import { image, projectEntry, projectPhoto } from "./media-schema";
 import { profile, type ProfileLink } from "./profile-schema";
+import { pattern } from "./pattern-schema";
 import { project, type ProjectStatus } from "./project-schema";
 
 /**
@@ -73,6 +74,8 @@ type ProjectSpec = {
   updatedDaysAgo: number;
   startedDaysAgo?: number;
   finishedDaysAgo?: number;
+  /** Slug del patrón de la biblioteca que sigue el proyecto (se resuelve acá). */
+  patternSlug?: string;
   patternText?: string;
   size?: string;
   madeFor?: string;
@@ -247,6 +250,7 @@ const DEMO_USERS: UserSpec[] = [
         finishedDaysAgo: 40,
         madeFor: "para mi hermana",
         tags: ["merino", "regalo"],
+        patternSlug: "bufanda-facil-en-fil-piuma",
         photos: [
           {
             alt: "Bufanda de lana verde agua doblada sobre una silla",
@@ -283,7 +287,7 @@ const DEMO_USERS: UserSpec[] = [
         updatedDaysAgo: 1,
         startedDaysAgo: 6,
         tags: ["crochet", "algodón"],
-        patternText: "Tutorial de crochet en YouTube (punto piqué)",
+        patternSlug: "malu-hat",
         photos: [
           {
             alt: "Gorro de crochet color terracota a medio tejer con el ganchillo",
@@ -395,6 +399,7 @@ const DEMO_USERS: UserSpec[] = [
         finishedDaysAgo: 25,
         madeFor: "para mi sobrina Emilia",
         tags: ["amigurumi", "regalo"],
+        patternSlug: "oso-tono",
         photos: [
           {
             alt: "Osita de amigurumi color crema con moño rosa",
@@ -926,6 +931,13 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   const createdAt = daysAgoDate(spec.createdDaysAgo);
   const email = `demo.${spec.username}@${DEMO_EMAIL_DOMAIN}`;
 
+  // La biblioteca se siembra aparte (`pnpm db:seed-patterns`): acá solo se
+  // resuelven los slugs que los proyectos declaran con `patternSlug`.
+  const patternRows = await db
+    .select({ id: pattern.id, slug: pattern.slug })
+    .from(pattern);
+  const patternIds = new Map(patternRows.map((row) => [row.slug, row.id]));
+
   await db.insert(user).values({
     id: userId,
     name: spec.name,
@@ -972,6 +984,15 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   try {
     for (const projectSpec of spec.projects) {
       const projectId = createId();
+      let patternId: string | null = null;
+      if (projectSpec.patternSlug) {
+        patternId = patternIds.get(projectSpec.patternSlug) ?? null;
+        if (!patternId) {
+          console.warn(
+            `  Aviso: no existe el patrón "${projectSpec.patternSlug}" para vincular (¿corriste pnpm db:seed-patterns?).`,
+          );
+        }
+      }
       await db.insert(project).values({
         id: projectId,
         userId,
@@ -980,6 +1001,7 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
         craft: projectSpec.craft,
         status: projectSpec.status,
         progress: projectSpec.progress,
+        patternId,
         patternText: projectSpec.patternText ?? null,
         size: projectSpec.size ?? null,
         madeFor: projectSpec.madeFor ?? null,
