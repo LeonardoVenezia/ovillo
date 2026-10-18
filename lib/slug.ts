@@ -1,3 +1,5 @@
+import { createId } from "@paralleldrive/cuid2";
+
 /**
  * Texto para URLs y comparaciones.
  *
@@ -27,4 +29,19 @@ export function slugify(text: string, fallback: string): string {
     .slice(0, 60)
     .replace(/-+$/g, "");
   return base || fallback;
+}
+
+/** `base`, `base-2`, `base-3`… según lo que esté tomado (primero libre). */
+export function firstFreeSlug(base: string, taken: Iterable<string>): string {
+  const used = new Set(taken);
+  if (!used.has(base)) {
+    return base;
+  }
+  for (let i = 2; i < 100; i += 1) {
+    const candidate = `${base}-${i}`;
+    if (!used.has(candidate)) {
+      return candidate;
+    }
+  }
+  return `${base}-${createId().slice(0, 6)}`;
 }

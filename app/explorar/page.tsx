@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * Explorar (spec §9): la puerta a patrones, proyectos y lanas. Las lanas ya
- * están abiertas; patrones y proyectos llegan en los próximos tramos de la
- * Fase 4, así que sus tarjetas avisan "próximamente" en vez de llevar a una
+ * Explorar (spec §9): la puerta a patrones, proyectos y lanas. Lanas y
+ * patrones ya están abiertas; proyectos llega en el próximo tramo de la
+ * Fase 4, así que su tarjeta avisa "próximamente" en vez de llevar a una
  * página vacía.
  */
 export default function ExplorePage() {
@@ -28,11 +28,14 @@ export default function ExplorePage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <ExploreCard
           href="/explorar/lanas"
+          testId="explore-lanas-card"
           icon={Package}
           title={es.explore.lanasTitle}
           body={es.explore.lanasBody}
         />
         <ExploreCard
+          href="/explorar/patrones"
+          testId="explore-patrones-card"
           icon={BookOpen}
           title={es.explore.patronesTitle}
           body={es.explore.patronesBody}
@@ -49,11 +52,13 @@ export default function ExplorePage() {
 
 function ExploreCard({
   href,
+  testId,
   icon: Icon,
   title,
   body,
 }: {
   href?: string;
+  testId?: string;
   icon: typeof Package;
   title: string;
   body: string;
@@ -82,7 +87,7 @@ function ExploreCard({
   return (
     <Link
       href={href}
-      data-testid="explore-lanas-card"
+      data-testid={testId}
       className="border-border bg-card hover:bg-muted/40 focus-visible:outline-ring flex flex-col gap-2 rounded-2xl border p-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       {content}

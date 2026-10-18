@@ -73,7 +73,8 @@ export async function deleteTestUsers(): Promise<void> {
   }
 
   // Antes que las cuentas: lo que la comunidad de prueba propuso al catálogo
-  // (si no, quedan lanas "sin revisar" huérfanas en las listas públicas).
+  // (si no, quedan lanas y patrones "sin revisar" huérfanos en las listas
+  // públicas).
   await sql`
     delete from "yarn"
     where created_by in (select id from "user" where email like ${pattern})
@@ -84,6 +85,10 @@ export async function deleteTestUsers(): Promise<void> {
   `;
   await sql`
     delete from "yarn_brand"
+    where created_by in (select id from "user" where email like ${pattern})
+  `;
+  await sql`
+    delete from "pattern"
     where created_by in (select id from "user" where email like ${pattern})
   `;
 

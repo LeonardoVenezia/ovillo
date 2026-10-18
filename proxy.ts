@@ -8,11 +8,12 @@ import { getEnv } from "@/lib/env";
 /**
  * Middleware de rutas (spec §5.1: "rutas privadas protegidas en servidor").
  *
- * - Perfiles `/@usuario` y proyectos `/@usuario/proyectos/slug`: chequea que
- *   existan y, si no, reescribe a la ruta de 404. Hace falta acá porque el
- *   caparazón PPR de las rutas dinámicas se sirve con estado 200 y
- *   `notFound()` ya no puede cambiarlo (ver D-023 y D-031). Ante errores de
- *   base se deja pasar: la página decide.
+ * - Perfiles `/@usuario`, proyectos `/@usuario/proyectos/slug`, lanas
+ *   (`/lanas/marca/slug`) y patrones (`/patrones/slug`): chequea que existan
+ *   y, si no, reescribe a la ruta de 404. Hace falta acá porque el caparazón
+ *   PPR de las rutas dinámicas se sirve con estado 200 y `notFound()` ya no
+ *   puede cambiarlo (ver D-023 y D-031). Ante errores de base se deja pasar:
+ *   la página decide.
  * - Rutas privadas: redirección optimista si falta la cookie de sesión; la
  *   validación real (contra la base) la hace cada página con `requireUser()`.
  */
@@ -25,6 +26,12 @@ const YARN_PATH_PATTERN = /^\/lanas\/([^/]+)\/([^/]+)$/;
 
 /** Edición de una lana propia (`/lanas/marca/slug/editar`). */
 const YARN_EDIT_PATH_PATTERN = /^\/lanas\/([^/]+)\/([^/]+)\/editar$/;
+
+/** Ficha pública de un patrón (`/patrones/slug`). */
+const PATTERN_PATH_PATTERN = /^\/patrones\/([^/]+)$/;
+
+/** Edición de un patrón propio (`/patrones/slug/editar`). */
+const PATTERN_EDIT_PATH_PATTERN = /^\/patrones\/([^/]+)\/editar$/;
 
 function decodeSegment(raw: string): string | null {
   try {
@@ -70,6 +77,17 @@ async function yarnExists(
   }
 }
 
+async function patternExists(slug: string): Promise<boolean> {
+  try {
+    const sql = neon(getEnv().DATABASE_URL);
+    const rows: unknown[] =
+      await sql`select 1 from pattern where slug = ${slug} limit 1`;
+    return rows.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -103,8 +121,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const patternMatch = pathname.match(PATTERN_PATH_PATTERN);
+  if (patternMatch) {
+    const patternSlug = decodeSegment(patternMatch[1])?.trim() ?? "";
+
+    if (patternSlug.length === 0 || !(await patternExists(patternSlug))) {
+      return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+    }
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith("/@")) {
     const rest = pathname.slice(2);
+
     // Rutas profundas que no son de proyecto (ej. `/@usuario/proyectos`):
     // que decida el router.
     if (rest.includes("/")) {
@@ -119,14 +148,16 @@ export async function proxy(request: NextRequest) {
   }
 
   // Solo las rutas privadas piden sesión; el matcher corre además para los
-  // perfiles de un segmento (`/@usuario`) y las lanas.
+  // perfiles de un segmento (`/@usuario`), las lanas y los patrones.
   const isPrivate =
     pathname === "/bienvenida" ||
     pathname === "/explorar/lanas/proponer" ||
+    pathname === "/explorar/patrones/proponer" ||
     pathname.startsWith("/mi-tejido") ||
     pathname.startsWith("/contador") ||
     pathname.startsWith("/configuracion") ||
-    YARN_EDIT_PATH_PATTERN.test(pathname);
+    YARN_EDIT_PATH_PATTERN.test(pathname) ||
+    PATTERN_EDIT_PATH_PATTERN.test(pathname);
   if (!isPrivate) {
     return NextResponse.next();
   }
@@ -156,5 +187,8 @@ export const config = {
     "/lanas/:marca/:slug",
     "/lanas/:marca/:slug/editar",
     "/explorar/lanas/proponer",
+    "/patrones/:slug",
+    "/patrones/:slug/editar",
+    "/explorar/patrones/proponer",
   ],
 };

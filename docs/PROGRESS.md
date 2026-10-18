@@ -10,7 +10,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 1 — Base del proyecto (deploy en Vercel + base Neon conectada)
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
-- [ ] Fase 4 — Catálogo (lanas y patrones) ← en curso (tramo 1: base de lanas hecho)
+- [ ] Fase 4 — Catálogo (lanas y patrones) ← en curso (tramos 1–2 hechos: base de lanas y patrones)
 - [ ] Fase 5 — Mi tejido (parte 2)
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
@@ -128,11 +128,11 @@ Notas:
 
 ## Fase 4 — Catálogo (2026-10-18 → )
 
-Tramos: 1) **base de lanas** (hecho) · 2) patrones · 3) galerías "hechos por la comunidad" + pulido de búsqueda.
+Tramos: 1) **base de lanas** (hecho) · 2) **patrones** (hecho) · 3) galerías "hechos por la comunidad" + pulido de búsqueda.
 
 Hecho (base de lanas, tramo 1):
 - **Modelo** (spec §5.6/§6, migración `0006`): `yarn_brand` (nombre, slug único, país) y `yarn` con grosor estándar (lace…super-bulky), composición JSON que suma 100, ovillo (g/m) y agujas como rango ("4,5–5 mm"). Duplicados por marca sin acentos (índice único funcional). Ver D-038.
-- **Catálogo público**: hub `/explorar` (lanas viva; patrones y proyectos marcados "Próximamente") y `/explorar/lanas` con búsqueda sin acentos (debounce de 350 ms), filtros por grosor, fibra, marca y país de la marca, chips de filtros activos, conteos y estados vacíos. Ficha `/lanas/[marca]/[slug]` con composición, ovillo, agujas, país y autoría; las lanas inexistentes dan un 404 real vía `proxy.ts`.
+- **Catálogo público**: hub `/explorar` (hoy con lanas y patrones vivos; proyectos marcado "Próximamente") y `/explorar/lanas` con búsqueda sin acentos (debounce de 350 ms), filtros por grosor, fibra, marca y país de la marca, chips de filtros activos, conteos y estados vacíos. Ficha `/lanas/[marca]/[slug]` con composición, ovillo, agujas, país y autoría; las lanas inexistentes dan un 404 real vía `proxy.ts`.
 - **Comunidad**: `/explorar/lanas/proponer` (pide email confirmado; sin él queda el aviso con reenvío). Nacen "sin revisar" y visibles al instante, con aviso de duplicado en vivo que enlaza a la existente; quien la propuso la edita en `/lanas/[marca]/[slug]/editar` con el slug fijo. En este tramo no hay borrado (lo decide la moderación, Fase 8).
 - **Siembra**: `pnpm db:seed-yarns` (idempotente) deja **38 lanas de 9 marcas reales** de AR/MX/ES/CL/CO (LHO, Katia, Lanas Stop, Hilos Omega, TAMM, Revesderecho, Modista, Tren y Desenlace) con datos de catálogos públicos de cada marca; lo que no se pudo confirmar se omite, no se inventa.
 - **Caché**: primer `"use cache"` del proyecto (listas y fichas con `cacheLife("hours")` e invalidación con `updateTag("lanas")` al mutar; D-039).
@@ -142,4 +142,16 @@ Hecho (base de lanas, tramo 1):
 Pendientes del tramo (no frenan; siguen):
 - [ ] Moderación de lanas (`sin-revisar` → `aprobada`) y borrado: panel de la Fase 8.
 - [ ] Galería "hecha por la comunidad" en la ficha de la lana: espera `project_yarn` (Fase 5).
-- [ ] Tramo 2: patrones (spec §5.5).
+
+Hecho (patrones, tramo 2):
+- **Modelo** (spec §5.5/§6, migración `0007`): tabla `pattern` con slug único global, técnica (vocabulario del perfil), categoría propia (prendas, accesorios, hogar, bebés, amigurumis, mascotas, otros), dificultad 1–5, grosor sugerido (grosores del catálogo), metraje, agujas, galga, tallas, idioma y `source_url` **obligatorio**. `pdf_url`, `is_free` y `designer_user_id` quedan reservadas; `search_vector` es un `tsvector` **generado por Postgres** (`to_tsvector('spanish', …)`) con índice GIN (primer `tsvector` del proyecto). Ver D-040.
+- **Biblioteca pública**: hub `/explorar` (ahora también con la tarjeta de patrones viva) y `/explorar/patrones` con búsqueda sin acentos (debounce de 350 ms; combina `tsvector` + `ILIKE`), filtros por técnica (chips), categoría, dificultad y grosor, conteos y estados vacíos. Ficha `/patrones/[slug]` con todos los datos, aviso de "sin revisar" y **botón al patrón original**; los patrones inexistentes dan un 404 real vía `proxy.ts`.
+- **Comunidad**: `/explorar/patrones/proponer` (cualquier persona con sesión: la spec §5.5 no pide email confirmado). Nacen "sin revisar" y visibles al instante; quien lo sumó lo edita en `/patrones/[slug]/editar` con el slug fijo. Por ahora todo patrón se enlaza a donde está publicado: no se resube ningún archivo de terceros.
+- **Siembra**: `pnpm db:seed-patterns` (idempotente) deja **20 patrones gratuitos reales** de las mismas marcas del catálogo: 12 de Revesderecho (CL; técnica y nivel reales de su tienda), 5 de Katia (ES) y 3 de LHO (AR, con los datos mínimos que se pudieron confirmar). Regla: solo datos verificados, lo que no consta va en `null`. Ver D-041.
+- **Caché**: listas y fichas con `"use cache"` + `cacheLife("hours")` e invalidación con `updateTag("patrones")`/`patron:<slug>` al mutar (misma receta de D-039).
+- **Calidad**: **140 tests** unitarios (15 nuevos: validación del contrato, parseo del formulario, orden del metraje, formatos) + **52 e2e** en verde — 6 nuevos (registro que ya puede proponer sin confirmar email, lista con búsqueda sin acentos y filtros combinados, ficha con datos verificados y 404, propuesta completa con enlace, edición que mantiene el slug, y visibilidad pública al instante filtrable por grosor). La limpieza de usuarios de prueba ahora también borra sus patrones propuestos. Build verde.
+
+Pendientes del tramo (no frenan; siguen):
+- [ ] Moderación de patrones (`sin-revisar` → `aprobada`) y borrado: panel de la Fase 8.
+- [ ] Galería "hechos por la comunidad" en la ficha del patrón, valoraciones y subida de PDF propio: tramos siguientes (las columnas ya están reservadas).
+- [ ] Tramo 3: galerías "hechos por la comunidad" y pulido de búsqueda (relevancia/populares, filtros avanzados).

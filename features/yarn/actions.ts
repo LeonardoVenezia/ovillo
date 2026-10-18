@@ -1,13 +1,12 @@
 "use server";
 
-import { createId } from "@paralleldrive/cuid2";
 import { and, eq, like, ne, sql } from "drizzle-orm";
 import { updateTag } from "next/cache";
 
 import { getDb } from "@/db";
 import { yarn, yarnBrand } from "@/db/yarn-schema";
 import { requireUser } from "@/lib/session";
-import { normalizeText, slugify } from "@/lib/slug";
+import { firstFreeSlug, normalizeText, slugify } from "@/lib/slug";
 import { es } from "@/messages/es";
 
 import { getOwnYarn } from "./queries";
@@ -107,21 +106,6 @@ async function uniqueYarnSlug(brandId: string, name: string): Promise<string> {
     base,
     rows.map((row) => row.slug),
   );
-}
-
-/** `base`, `base-2`, `base-3`… según lo que esté tomado. */
-function firstFreeSlug(base: string, taken: string[]): string {
-  const used = new Set(taken);
-  if (!used.has(base)) {
-    return base;
-  }
-  for (let i = 2; i < 100; i += 1) {
-    const candidate = `${base}-${i}`;
-    if (!used.has(candidate)) {
-      return candidate;
-    }
-  }
-  return `${base}-${createId().slice(0, 6)}`;
 }
 
 /** La lana que ya existe con ese nombre en esa marca (sin acentos), si hay. */

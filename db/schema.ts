@@ -19,3 +19,4 @@ export * from "./media-schema";
 export * from "./counter-schema";
 export * from "./tool-schema";
 export * from "./yarn-schema";
+export * from "./pattern-schema";

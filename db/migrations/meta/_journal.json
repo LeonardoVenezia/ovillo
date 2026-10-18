@@ -50,6 +50,13 @@
       "when": 1792341752167,
       "tag": "0006_pink_jamie_braddock",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792347884281,
+      "tag": "0007_brown_rick_jones",
+      "breakpoints": true
     }
   ]
 }
