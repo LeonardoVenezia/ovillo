@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:check": "tsx db/check.ts",
+    "db:seed-demo": "tsx db/seed-demo.ts",
     "storage:check": "tsx storage/check.ts"
   },
   "dependencies": {

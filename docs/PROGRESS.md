@@ -97,6 +97,9 @@ Hecho (diario de avance y fotos, mismo día):
 - **Modelo**: migración `0003` (`image`, `project_photo`, `project_entry` + `project.cover_image_id`). Al borrar una foto o una entrada se borran también sus objetos de R2.
 - **Calidad**: **76 tests** unitarios + **22 e2e** en verde — 9 nuevos que suben fotos de verdad al bucket (comprimen en el navegador, esperan que las imágenes carguen desde la URL pública de R2), cambian portada, reordenan, guardan una entrada con foto, la ven sin sesión con el Open Graph correcto y borran todo; la limpieza de usuarios de prueba ahora también borra sus objetos de R2. Build verde.
 
+Hecho (datos de prueba, mismo día):
+- **Cuentas y contenido demo** (D-034): `pnpm db:seed-demo` siembra 5 cuentas (`@mariaruiz`, `@candelateje`, `@lupitateje`, `@solaguirre` con perfil privado y `@tomiteje` recién llegada) con 11 proyectos de estados y técnicas variadas (uno privado y uno sin portada), 27 fotos generadas localmente y 14 entradas de diario. Re-ejecutarlo re-siembra desde cero; `--clean` solo borra. Contraseña compartida: `ovillo-demo-2026`.
+
 Pendiente de esta fase (próximos tramos):
 - [ ] Contador de vueltas: varios por proyecto, botones grandes, recordatorio cada N vueltas, pantalla completa, modo offline con sincronización (spec §5.4).
 - [ ] Herramientas: inventario de agujas y ganchos (medidas con equivalencias).
