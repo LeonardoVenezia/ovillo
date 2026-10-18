@@ -150,6 +150,7 @@ Hecho (patrones, tramo 2):
 - **Siembra**: `pnpm db:seed-patterns` (idempotente) deja **20 patrones gratuitos reales** de las mismas marcas del catálogo: 12 de Revesderecho (CL; técnica y nivel reales de su tienda), 5 de Katia (ES) y 3 de LHO (AR, con los datos mínimos que se pudieron confirmar). Regla: solo datos verificados, lo que no consta va en `null`. Ver D-041.
 - **Caché**: listas y fichas con `"use cache"` + `cacheLife("hours")` e invalidación con `updateTag("patrones")`/`patron:<slug>` al mutar (misma receta de D-039).
 - **Calidad**: **140 tests** unitarios (15 nuevos: validación del contrato, parseo del formulario, orden del metraje, formatos) + **52 e2e** en verde — 6 nuevos (registro que ya puede proponer sin confirmar email, lista con búsqueda sin acentos y filtros combinados, ficha con datos verificados y 404, propuesta completa con enlace, edición que mantiene el slug, y visibilidad pública al instante filtrable por grosor). La limpieza de usuarios de prueba ahora también borra sus patrones propuestos. Build verde.
+- **Producción**: commits `df706b8` (+ `af0e8f6` de formato), CI en verde y deploy verificado — hub con la tarjeta viva, lista con 20 patrones, búsqueda sin acentos ("tono" → Oso Toño), filtro crochet (13), ficha con datos verificados (`5,5 mm`, `M a XXL`) y enlace a la fuente, rutas privadas redirigiendo a ingresar y 404 real de patrón inexistente.
 
 Pendientes del tramo (no frenan; siguen):
 - [ ] Moderación de patrones (`sin-revisar` → `aprobada`) y borrado: panel de la Fase 8.

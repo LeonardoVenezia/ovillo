@@ -52,7 +52,8 @@ Producción: <https://ovillo-sepia.vercel.app>
 
 ## Últimos hitos (para confirmar que estamos al día)
 
+- `df706b8` — feat(patrones): biblioteca de patrones con propuestas de la comunidad (migración `0007`); CI verde y prod verificado (lista con 20 patrones, búsqueda sin acentos, filtro crochet, ficha con datos verificados y enlace a la fuente, 404 real).
+- `af0e8f6` — style(formato): repaso de prettier en herramientas.
+- `099e39f` — docs(estado): tramo 1 de lanas cerrado y verificado en producción.
 - `9216ce7` — feat(lanas): catálogo base de lanas con propuestas de la comunidad (migración `0006`); CI verde y prod verificado (lista con 38 lanas, ficha, búsqueda sin acentos, 404 real).
 - `fdba23a` — docs(estado): sin hash fijo en el encabezado (evita updates por cada commit).
-- `11aea12` — docs(estado): snapshot vivo para retomar el trabajo en cualquier sesión.
-- `3a51b79` — docs(progreso): cierre de la Fase 3 y verificación en producción.
