@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { PROJECT_STATUSES } from "@/db/project-schema";
 import { CRAFT_SLUGS } from "@/features/profile/constants";
+import { slugify } from "@/lib/slug";
 import { es } from "@/messages/es";
 
 /**
@@ -36,15 +37,7 @@ export function splitTags(value: string): string[] {
  * Si el nombre no deja nada utilizable (ej. emojis), cae en "proyecto".
  */
 export function slugifyProjectName(name: string): string {
-  const base = name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60)
-    .replace(/-+$/g, "");
-  return base || "proyecto";
+  return slugify(name, "proyecto");
 }
 
 export const projectInputSchema = z.object({

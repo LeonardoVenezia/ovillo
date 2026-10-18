@@ -43,6 +43,13 @@
       "when": 1792298322192,
       "tag": "0005_exotic_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792341752167,
+      "tag": "0006_pink_jamie_braddock",
+      "breakpoints": true
     }
   ]
 }

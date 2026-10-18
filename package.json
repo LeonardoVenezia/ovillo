@@ -17,6 +17,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check": "tsx db/check.ts",
     "db:seed-demo": "tsx db/seed-demo.ts",
+    "db:seed-yarns": "tsx db/seed-yarns.ts",
     "storage:check": "tsx storage/check.ts"
   },
   "dependencies": {

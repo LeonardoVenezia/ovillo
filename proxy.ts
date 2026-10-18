@@ -20,6 +20,12 @@ import { getEnv } from "@/lib/env";
 /** Ruta canónica del proyecto público (con arroba; sin ella no se chequea). */
 const PROJECT_PATH_PATTERN = /^\/@([^/]+)\/proyectos\/([^/]+)$/;
 
+/** Ficha pública de una lana (`/lanas/marca/slug`). */
+const YARN_PATH_PATTERN = /^\/lanas\/([^/]+)\/([^/]+)$/;
+
+/** Edición de una lana propia (`/lanas/marca/slug/editar`). */
+const YARN_EDIT_PATH_PATTERN = /^\/lanas\/([^/]+)\/([^/]+)\/editar$/;
+
 function decodeSegment(raw: string): string | null {
   try {
     return decodeURIComponent(raw);
@@ -50,6 +56,20 @@ async function projectExists(username: string, slug: string): Promise<boolean> {
   }
 }
 
+async function yarnExists(
+  brandSlug: string,
+  yarnSlug: string,
+): Promise<boolean> {
+  try {
+    const sql = neon(getEnv().DATABASE_URL);
+    const rows: unknown[] =
+      await sql`select 1 from yarn y join yarn_brand b on b.id = y.brand_id where b.slug = ${brandSlug} and y.slug = ${yarnSlug} limit 1`;
+    return rows.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -62,6 +82,21 @@ export async function proxy(request: NextRequest) {
       !USERNAME_PATTERN.test(username) ||
       slug.length === 0 ||
       !(await projectExists(username, slug))
+    ) {
+      return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  const yarnMatch = pathname.match(YARN_PATH_PATTERN);
+  if (yarnMatch) {
+    const brandSlug = decodeSegment(yarnMatch[1])?.trim() ?? "";
+    const yarnSlug = decodeSegment(yarnMatch[2])?.trim() ?? "";
+
+    if (
+      brandSlug.length === 0 ||
+      yarnSlug.length === 0 ||
+      !(await yarnExists(brandSlug, yarnSlug))
     ) {
       return NextResponse.rewrite(new URL("/no-encontrado", request.url));
     }
@@ -84,12 +119,14 @@ export async function proxy(request: NextRequest) {
   }
 
   // Solo las rutas privadas piden sesión; el matcher corre además para los
-  // perfiles de un segmento (`/@usuario`).
+  // perfiles de un segmento (`/@usuario`) y las lanas.
   const isPrivate =
     pathname === "/bienvenida" ||
+    pathname === "/explorar/lanas/proponer" ||
     pathname.startsWith("/mi-tejido") ||
     pathname.startsWith("/contador") ||
-    pathname.startsWith("/configuracion");
+    pathname.startsWith("/configuracion") ||
+    YARN_EDIT_PATH_PATTERN.test(pathname);
   if (!isPrivate) {
     return NextResponse.next();
   }
@@ -116,5 +153,8 @@ export const config = {
     "/bienvenida",
     "/:username",
     "/:username/proyectos/:slug",
+    "/lanas/:marca/:slug",
+    "/lanas/:marca/:slug/editar",
+    "/explorar/lanas/proponer",
   ],
 };

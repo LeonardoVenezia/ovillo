@@ -10,7 +10,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 1 — Base del proyecto (deploy en Vercel + base Neon conectada)
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
-- [ ] Fase 4 — Catálogo (lanas y patrones) ← próxima
+- [ ] Fase 4 — Catálogo (lanas y patrones) ← en curso (tramo 1: base de lanas hecho)
 - [ ] Fase 5 — Mi tejido (parte 2)
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
@@ -125,3 +125,20 @@ Notas:
 - Por ahora dev y producción comparten la misma base Neon (D-021); antes del registro público hace falta una rama de desarrollo.
 - La migración `0000` es la primera del repo; `db/auth-schema.ts` se regenera con el CLI (D-022), no se edita a mano.
 - Las migraciones `0001` (`profile`), `0002` (`project`), `0003` (`image`, `project_photo`, `project_entry`), `0004` (`row_counter`) y `0005` (`tool`) ya están aplicadas; se generan y aplican solo con `pnpm db:generate` + `pnpm db:migrate`.
+
+## Fase 4 — Catálogo (2026-10-18 → )
+
+Tramos: 1) **base de lanas** (hecho) · 2) patrones · 3) galerías "hechos por la comunidad" + pulido de búsqueda.
+
+Hecho (base de lanas, tramo 1):
+- **Modelo** (spec §5.6/§6, migración `0006`): `yarn_brand` (nombre, slug único, país) y `yarn` con grosor estándar (lace…super-bulky), composición JSON que suma 100, ovillo (g/m) y agujas como rango ("4,5–5 mm"). Duplicados por marca sin acentos (índice único funcional). Ver D-038.
+- **Catálogo público**: hub `/explorar` (lanas viva; patrones y proyectos marcados "Próximamente") y `/explorar/lanas` con búsqueda sin acentos (debounce de 350 ms), filtros por grosor, fibra, marca y país de la marca, chips de filtros activos, conteos y estados vacíos. Ficha `/lanas/[marca]/[slug]` con composición, ovillo, agujas, país y autoría; las lanas inexistentes dan un 404 real vía `proxy.ts`.
+- **Comunidad**: `/explorar/lanas/proponer` (pide email confirmado; sin él queda el aviso con reenvío). Nacen "sin revisar" y visibles al instante, con aviso de duplicado en vivo que enlaza a la existente; quien la propuso la edita en `/lanas/[marca]/[slug]/editar` con el slug fijo. En este tramo no hay borrado (lo decide la moderación, Fase 8).
+- **Siembra**: `pnpm db:seed-yarns` (idempotente) deja **38 lanas de 9 marcas reales** de AR/MX/ES/CL/CO (LHO, Katia, Lanas Stop, Hilos Omega, TAMM, Revesderecho, Modista, Tren y Desenlace) con datos de catálogos públicos de cada marca; lo que no se pudo confirmar se omite, no se inventa.
+- **Caché**: primer `"use cache"` del proyecto (listas y fichas con `cacheLife("hours")` e invalidación con `updateTag("lanas")` al mutar; D-039).
+- **Calidad**: **125 tests** unitarios (17 nuevos) + **46 e2e** en verde — 8 nuevos (registro con aviso de verificación y confirmación por email, lista con búsqueda sin acentos y filtros combinados, ficha y 404, propuesta con duplicado bloqueado, edición que mantiene el slug y visibilidad pública al instante). La limpieza de usuarios de prueba ahora también borra sus lanas y marcas propuestas. Build verde.
+
+Pendientes del tramo (no frenan; siguen):
+- [ ] Moderación de lanas (`sin-revisar` → `aprobada`) y borrado: panel de la Fase 8.
+- [ ] Galería "hecha por la comunidad" en la ficha de la lana: espera `project_yarn` (Fase 5).
+- [ ] Tramo 2: patrones (spec §5.5).

@@ -10,13 +10,13 @@ Producción: <https://ovillo-sepia.vercel.app>
 ## Resumen
 
 - Fases **0 a 3 hechas y cerradas**: base del proyecto, cuentas/perfil, y Mi tejido parte 1 (proyectos, diario, fotos, contador de vueltas y herramientas).
-- **Próxima: Fase 4 — Catálogo** (spec §5.5 y §5.6): lanas y marcas con seeds, patrones, búsqueda en español con filtros y galerías "hechos por la comunidad". Todavía sin empezar.
-- El repo quedó **limpio**: todo pusheado a `main`, CI en verde, deploy verificado en producción. **No hay trabajo a medio terminar.**
+- **Fase 4 — Catálogo, en curso. Tramo 1 (base de lanas) hecho**: catálogo público con 38 lanas de 9 marcas reales de AR/MX/ES/CL/CO, fichas, búsqueda con filtros y propuestas de la comunidad (nacen "sin revisar" y visibles al instante). Próximo: **tramo 2 — Patrones** (spec §5.5).
+- El repo quedó **limpio**: todo pusheado a `main`, CI en verde, deploy verificado en producción.
 
 ## Próximos pasos (en orden)
 
-1. Leer las secciones de la spec a tocar: §5.5 (patrones), §5.6 (base de lanas), §6 (tablas `pattern`, `yarn_brand`, `yarn`) y §9 (rutas de `/explorar`). No editar `SPEC.md`.
-2. Fase 4 — Catálogo, sugerencia de orden: primero la **base de lanas** (marcas + lanas + seeds de Argentina, México, España, Chile y Colombia) con su ficha; después **patrones**, y al final **búsqueda con filtros y galerías**. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (la numeración sigue desde D-037).
+1. Leer las secciones de la spec a tocar: §5.5 (patrones), §6 (tabla `pattern`) y §9 (rutas de `/explorar`). No editar `SPEC.md`.
+2. Fase 4 — Catálogo, tramos: 1) **base de lanas** (hecho) · 2) **patrones** (próximo) · 3) galerías "hechos por la comunidad" y pulido de búsqueda. Las galerías de lanas en la ficha esperan `project_yarn` (Fase 5). Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (la numeración sigue desde D-039).
 3. Al cerrar cada tramo: gates (`pnpm typecheck && pnpm lint && pnpm test`; con e2e y `pnpm build` al cerrar fase), actualizar `ESTADO.md` (este archivo) y `PROGRESS.md`, commit + push en español, y verificar el CI (ver "Cómo retomar").
 
 ## Pendientes que dependen del dueño (no frenan el código)
@@ -25,6 +25,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 - [ ] **Dominio propio** (decisión de compra, ~USD 10–15/año) — habilita Resend real y una URL mejor (D-018).
 - [ ] **Google OAuth** (pospuesto a propósito; D-015).
 - [ ] Recorrer `/bienvenida` y el perfil público con su propia cuenta.
+- [ ] Recorrer el catálogo en producción (`/explorar/lanas`): probar la búsqueda y los filtros, y proponer una lana real desde `/explorar/lanas/proponer` (queda visible al instante, con el cartel de "sin revisar").
 - [ ] Antes de abrir el registro: `pnpm db:seed-demo --clean` (borra las cuentas demo, D-034) + rama de Neon.
 - [ ] Vercel: el deploy normal sale solo con el push a `main`; no hay CLI autenticada en la máquina (solo el dueño puede tocar cosas del panel).
 
@@ -46,7 +47,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 3. Gates del día a día: `pnpm typecheck && pnpm lint && pnpm test`. Para e2e: `pnpm test:e2e`. Al cerrar fase: `pnpm build`.
 4. Probar prefetching/PPR de verdad: build de producción local (`pnpm build && BETTER_AUTH_URL=http://localhost:3200 pnpm start --port 3200`); el e2e corre en dev y no ve esa clase de bugs (D-036).
 5. Si `pnpm` falla instalando `drizzle-orm`: usar `--registry=https://registry.npmjs.org/` (D-011).
-6. Migraciones: siempre `pnpm db:generate` + `pnpm db:migrate` (nunca `drizzle-kit push`). La base compartida ya tiene aplicadas `0000`–`0005`.
+6. Migraciones: siempre `pnpm db:generate` + `pnpm db:migrate` (nunca `drizzle-kit push`). La base compartida ya tiene aplicadas `0000`–`0006`. El catálogo base de lanas se siembra (o actualiza) con `pnpm db:seed-yarns` (idempotente).
 
 ## Últimos hitos (para confirmar que estamos al día)
 

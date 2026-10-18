@@ -59,17 +59,33 @@ export async function deleteTestUsers(): Promise<void> {
     throw new Error("Los tests e2e necesitan DATABASE_URL (ver .env.example).");
   }
   const sql = neon(databaseUrl);
+  const pattern = `e2e.%@${TEST_EMAIL_DOMAIN}`;
 
   try {
     const rows = (await sql`
       select i.r2_key from "image" i
       join "user" u on u.id = i.owner_id
-      where u.email like ${`e2e.%@${TEST_EMAIL_DOMAIN}`}
+      where u.email like ${pattern}
     `) as { r2_key: string }[];
     await deleteTestObjects(rows.map((row) => row.r2_key));
   } catch (error) {
     console.warn("No se pudieron limpiar las fotos de prueba en R2:", error);
   }
 
-  await sql`delete from "user" where email like ${`e2e.%@${TEST_EMAIL_DOMAIN}`}`;
+  // Antes que las cuentas: lo que la comunidad de prueba propuso al catálogo
+  // (si no, quedan lanas "sin revisar" huérfanas en las listas públicas).
+  await sql`
+    delete from "yarn"
+    where created_by in (select id from "user" where email like ${pattern})
+       or brand_id in (
+         select id from "yarn_brand"
+         where created_by in (select id from "user" where email like ${pattern})
+       )
+  `;
+  await sql`
+    delete from "yarn_brand"
+    where created_by in (select id from "user" where email like ${pattern})
+  `;
+
+  await sql`delete from "user" where email like ${pattern}`;
 }
