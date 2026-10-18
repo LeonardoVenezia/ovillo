@@ -19,6 +19,7 @@ import { VerificationNotice } from "@/features/auth/components/verification-noti
 import { getProfileByUserId } from "@/features/profile/queries";
 import { ProjectCard } from "@/features/projects/components/project-card";
 import { listProjects, type Project } from "@/features/projects/queries";
+import { countTools } from "@/features/tools/queries";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
@@ -41,9 +42,10 @@ export default function MyWorkPage() {
 
 async function MyWorkContent() {
   const user = await requireUser();
-  const [profile, projects] = await Promise.all([
+  const [profile, projects, toolsCount] = await Promise.all([
     getProfileByUserId(user.id),
     listProjects(user.id),
+    countTools(user.id),
   ]);
   const profileStarted = (profile?.crafts.length ?? 0) > 0;
 
@@ -141,6 +143,18 @@ async function MyWorkContent() {
         )}
       </section>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{es.tools.hubTitle}</CardTitle>
+          <CardDescription>{toolsSummary(toolsCount)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <Link href="/mi-tejido/herramientas">{es.tools.hubCta}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <p className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <Link href="/configuracion" className="underline underline-offset-4">
           {es.myWork.settingsLink}
@@ -174,4 +188,15 @@ function statusSummary(projects: Project[]): string {
     })
     .filter((part): part is string => part !== null)
     .join(" · ");
+}
+
+/** "Tenés 12 herramientas guardadas": resumen del inventario para el hub. */
+function toolsSummary(count: number): string {
+  if (count === 0) {
+    return es.tools.hubEmpty;
+  }
+  if (count === 1) {
+    return es.tools.hubCountOne;
+  }
+  return es.tools.hubCount.replace("{count}", String(count));
 }

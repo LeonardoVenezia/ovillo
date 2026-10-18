@@ -1,15 +1,15 @@
 # PROGRESS — Ovillo
 
 Bitácora de construcción por fases (spec §10: cada fase cierra con tests verdes y una nota acá).
-Última actualización: 2026-10-17
+Última actualización: 2026-10-18
 
 ## Estado general
 
 - [x] Fase 0 — Repo y documentación
 - [x] Fase 1 — Base del proyecto (deploy en Vercel + base Neon conectada)
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
-- [ ] Fase 3 — Mi tejido (parte 1) ← en curso (proyectos, diario, fotos y contador hechos)
-- [ ] Fase 4 — Catálogo (lanas y patrones)
+- [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
+- [ ] Fase 4 — Catálogo (lanas y patrones) ← próxima
 - [ ] Fase 5 — Mi tejido (parte 2)
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
@@ -98,7 +98,7 @@ Hecho (diario de avance y fotos, mismo día):
 - **Calidad**: **76 tests** unitarios + **22 e2e** en verde — 9 nuevos que suben fotos de verdad al bucket (comprimen en el navegador, esperan que las imágenes carguen desde la URL pública de R2), cambian portada, reordenan, guardan una entrada con foto, la ven sin sesión con el Open Graph correcto y borran todo; la limpieza de usuarios de prueba ahora también borra sus objetos de R2. Build verde.
 
 Hecho (datos de prueba, mismo día):
-- **Cuentas y contenido demo** (D-034): `pnpm db:seed-demo` siembra 5 cuentas (`@mariaruiz`, `@candelateje`, `@lupitateje`, `@solaguirre` con perfil privado y `@tomiteje` recién llegada) con 11 proyectos de estados y técnicas variadas (uno privado y uno sin portada), 27 fotos generadas localmente, 14 entradas de diario y 4 contadores de vueltas ya empezados. Re-ejecutarlo re-siembra desde cero; `--clean` solo borra. Contraseña compartida: `ovillo-demo-2026`.
+- **Cuentas y contenido demo** (D-034): `pnpm db:seed-demo` siembra 5 cuentas (`@mariaruiz`, `@candelateje`, `@lupitateje`, `@solaguirre` con perfil privado y `@tomiteje` recién llegada) con 11 proyectos de estados y técnicas variadas (uno privado y uno sin portada), 27 fotos generadas localmente, 14 entradas de diario, 4 contadores de vueltas ya empezados y 15 herramientas de inventario. Re-ejecutarlo re-siembra desde cero; `--clean` solo borra. Contraseña compartida: `ovillo-demo-2026`.
 
 Hecho (contador de vueltas, mismo día):
 - **Contador de vueltas** (spec §5.4): hasta 10 contadores por proyecto ("cuerpo", "manga izq.") con nombre y recordatorio opcional *cada N vueltas*. Conteo rápido desde el detalle del proyecto y **pantalla completa** en `/contador/[id]`: botón +1 gigante, −1, reinicio con confirmación en dos pasos, aviso al llegar al múltiplo ("aumentar cada 6") con vibración, pantalla siempre encendida (Wake Lock cuando el navegador lo permite) y flechas ↑/↓ con teclado en escritorio.
@@ -107,12 +107,18 @@ Hecho (contador de vueltas, mismo día):
 - **Fix de prod (D-036)**: al verificar en producción apareció un bug viejo del ingreso: el prefetch sin sesión cacheaba la redirección de `/mi-tejido` y, tras enviar el formulario, la navegación devolvía al formulario. Ahora ingresar, registrarse y salir navegan con recarga completa (`hardNavigate`), verificado con un build de producción local (donde el prefetching está activo).
 - **Calidad**: **91 tests** unitarios (14 nuevos: topes, recordatorio, resolución de conflictos) + **30 e2e** en verde — 8 nuevos, incluido uno que corta la red de verdad (`setOffline`), cuenta sin conexión y verifica que sincronice al volver. Build verde.
 
-Pendiente de esta fase (próximos tramos):
-- [ ] Herramientas: inventario de agujas y ganchos (medidas con equivalencias).
+Hecho (herramientas, mismo día):
+- **Inventario de agujas y ganchos** (spec §5.7): `/mi-tejido/herramientas` con la grilla de lo que tenés ordenada de la más fina a la más gruesa, filtro por tipo en chips (rectas, circulares, doble punta, ganchos), alta y edición en línea (tipo, medida, material, largo del cable en circulares, cuántas y notas) y borrado con confirmación en dos pasos. El hub de Mi tejido suma la tarjeta con el resumen ("Tenés N herramientas guardadas").
+- **Equivalencias de numeración** (D-037): al escribir la medida se ve al instante su equivalencia ("US 6 · UK 8", en ganchos "US G-6") y la página incluye la **tabla de equivalencias** completa (mm ↔ US ↔ UK; ganchos mm ↔ letra US), tomada de la tabla del Craft Yarn Council. Si una medida no está en la tabla, no se inventa nada. Medidas de 0,5 a 25 mm en pasos de 0,25; hasta 200 herramientas; privadas como el cuaderno.
+- **Modelo**: migración `0005` (`tool`), sumada a la base. `project_tool` (asignar herramientas a proyectos) queda para la Fase 5, junto con el inventario de lana.
+- **Datos demo**: las cuentas demo ahora también tienen herramientas (María 7, Candela 3, Lupita 3, Sol 2: 15 en total, con materiales, cables y cantidades variadas).
+- **Calidad**: **108 tests** unitarios (17 nuevos: grilla de medidas, parseo con coma, topes, tablas ordenadas y sin repetidas) + **38 e2e** en verde — 8 nuevos (estado vacío y hub, alta con equivalencia, gancho y circular con cable, filtros, edición, borrado y privacidad). Build verde y repaso del flujo con un build de producción local.
+
+Pendientes de la fase (anotados; no frenan el cierre):
 - [ ] (Calidad) e2e contra un build de producción (prefetching real): hoy `pnpm test:e2e` corre en dev y no ve esta clase de bugs; sumar un proyecto de Playwright contra `pnpm build` + `pnpm start` (o el deploy de preview).
-- [ ] (Diferido a propósito) Del tramo de fotos: campo de texto alternativo en la UI, `blurhash`, limpieza de imágenes huérfanas, editar entradas guardadas. Del contador: atajo en la hoja *Crear*, notificaciones del recordatorio, contadores compartidos entre proyectos.
+- [ ] (Diferido a propósito) Del tramo de fotos: campo de texto alternativo en la UI, `blurhash`, limpieza de imágenes huérfanas, editar entradas guardadas. Del contador: atajo en la hoja *Crear*, notificaciones del recordatorio, contadores compartidos entre proyectos. De herramientas: asignarlas a proyectos (`project_tool`, Fase 5) y avatar con subida (misma infraestructura de R2).
 
 Notas:
 - Por ahora dev y producción comparten la misma base Neon (D-021); antes del registro público hace falta una rama de desarrollo.
 - La migración `0000` es la primera del repo; `db/auth-schema.ts` se regenera con el CLI (D-022), no se edita a mano.
-- Las migraciones `0001` (`profile`), `0002` (`project`) y `0003` (`image`, `project_photo`, `project_entry`) ya están aplicadas; se generan y aplican solo con `pnpm db:generate` + `pnpm db:migrate`.
+- Las migraciones `0001` (`profile`), `0002` (`project`), `0003` (`image`, `project_photo`, `project_entry`), `0004` (`row_counter`) y `0005` (`tool`) ya están aplicadas; se generan y aplican solo con `pnpm db:generate` + `pnpm db:migrate`.

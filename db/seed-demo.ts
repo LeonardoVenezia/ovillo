@@ -13,6 +13,7 @@ import { thumbKeyFor } from "../features/projects/media-view";
 import { deleteObject, putObject } from "../storage";
 import { account, user } from "./auth-schema";
 import { rowCounter } from "./counter-schema";
+import { tool, type ToolKind, type ToolMaterial } from "./tool-schema";
 import { getDb } from "./index";
 import { image, projectEntry, projectPhoto } from "./media-schema";
 import { profile, type ProfileLink } from "./profile-schema";
@@ -99,7 +100,18 @@ type UserSpec = {
   createdDaysAgo: number;
   /** false = cuenta "recién llegada", sin fila de perfil (prueba de vacíos). */
   withProfile?: boolean;
+  /** Herramientas del inventario (spec §5.7) de la cuenta. */
+  tools?: ToolSpec[];
   projects: ProjectSpec[];
+};
+
+type ToolSpec = {
+  kind: ToolKind;
+  sizeMm: number;
+  material?: ToolMaterial;
+  lengthCm?: number;
+  quantity?: number;
+  notes?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -132,6 +144,32 @@ const DEMO_USERS: UserSpec[] = [
     skillLevel: "intermediate",
     links: [{ kind: "instagram", url: "https://instagram.com/mariaruiz.teje" }],
     createdDaysAgo: 210,
+    tools: [
+      {
+        kind: "circulares",
+        sizeMm: 3.5,
+        material: "madera",
+        lengthCm: 80,
+        notes: "Las de bambú, las que más uso.",
+      },
+      { kind: "circulares", sizeMm: 4, material: "madera", lengthCm: 80 },
+      { kind: "circulares", sizeMm: 4.5, material: "aluminio", lengthCm: 60 },
+      { kind: "rectas", sizeMm: 4, material: "aluminio", quantity: 2 },
+      {
+        kind: "doble-punta",
+        sizeMm: 3,
+        material: "acero",
+        notes: "Juego de 5 para los puños.",
+      },
+      { kind: "gancho", sizeMm: 3.5, material: "aluminio" },
+      {
+        kind: "gancho",
+        sizeMm: 4,
+        material: "resina",
+        quantity: 2,
+        notes: "El de mango ergonómico y el de siempre.",
+      },
+    ],
     projects: [
       {
         slug: "sweater-otono",
@@ -292,6 +330,16 @@ const DEMO_USERS: UserSpec[] = [
     skillLevel: "beginner",
     links: [],
     createdDaysAgo: 120,
+    tools: [
+      { kind: "gancho", sizeMm: 4, material: "aluminio" },
+      { kind: "gancho", sizeMm: 4.5, material: "aluminio" },
+      {
+        kind: "gancho",
+        sizeMm: 5,
+        material: "madera",
+        notes: "Regalo del cumple.",
+      },
+    ],
     projects: [
       {
         slug: "manta-granny",
@@ -407,6 +455,23 @@ const DEMO_USERS: UserSpec[] = [
       { kind: "pinterest", url: "https://www.pinterest.com/lupitateje" },
     ],
     createdDaysAgo: 260,
+    tools: [
+      {
+        kind: "circulares",
+        sizeMm: 2.25,
+        material: "acero",
+        lengthCm: 100,
+        notes: "Para los encajes finos.",
+      },
+      { kind: "circulares", sizeMm: 2.75, material: "acero", lengthCm: 100 },
+      {
+        kind: "doble-punta",
+        sizeMm: 2,
+        material: "acero",
+        quantity: 2,
+        notes: "Dos juegos de 5 para mitones.",
+      },
+    ],
     projects: [
       {
         slug: "chal-encaje",
@@ -547,6 +612,10 @@ const DEMO_USERS: UserSpec[] = [
     links: [],
     defaultVisibility: "privado",
     createdDaysAgo: 60,
+    tools: [
+      { kind: "rectas", sizeMm: 3.75, material: "aluminio" },
+      { kind: "rectas", sizeMm: 4.5, material: "bambu" },
+    ],
     projects: [
       {
         slug: "camperita-bebe",
@@ -898,6 +967,7 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   let photoCount = 0;
   let entryCount = 0;
   let counterCount = 0;
+  let toolCount = 0;
 
   try {
     for (const projectSpec of spec.projects) {
@@ -982,13 +1052,30 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
         });
       }
     }
+
+    for (const toolSpec of spec.tools ?? []) {
+      toolCount++;
+      await db.insert(tool).values({
+        id: createId(),
+        userId,
+        kind: toolSpec.kind,
+        sizeMm: toolSpec.sizeMm,
+        material: toolSpec.material ?? null,
+        lengthCm:
+          toolSpec.kind === "circulares" ? (toolSpec.lengthCm ?? null) : null,
+        quantity: toolSpec.quantity ?? 1,
+        notes: toolSpec.notes ?? null,
+        createdAt,
+        updatedAt: createdAt,
+      });
+    }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
 
   const projectCount = spec.projects.length;
   console.log(
-    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es)`,
+    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s)`,
   );
 }
 
