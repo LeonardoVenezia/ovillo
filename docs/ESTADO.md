@@ -4,7 +4,7 @@
 > **Se lee al empezar cada sesión y se actualiza al cerrar cada tramo** — aunque la fase no haya terminado, incluso a mitad de una tarea.
 > El histórico completo por fase está en `PROGRESS.md`; las decisiones, en `DECISIONS.md`.
 
-Última actualización: **2026-10-18** · Fase 4 (Catálogo) cerrada y verificada; **Fase 5 (Mi tejido, parte 2) en curso: tramo 1 (inventario de lana) construido, verificación en producción pendiente**
+Última actualización: **2026-10-18** · Fase 4 (Catálogo) cerrada y verificada; **Fase 5 (Mi tejido, parte 2) en curso: tramo 1 (inventario de lana) hecho y verificado en producción**
 Producción: <https://ovillo-sepia.vercel.app>
 
 ## Resumen
@@ -12,14 +12,13 @@ Producción: <https://ovillo-sepia.vercel.app>
 - Fases **0 a 3 hechas y cerradas**: base del proyecto, cuentas/perfil, y Mi tejido parte 1 (proyectos, diario, fotos, contador de vueltas y herramientas).
 - **Fase 4 — Catálogo, cerrada**: tramo 1, catálogo de lanas (38 lanas de 9 marcas reales); tramo 2, **biblioteca de patrones** (20 patrones gratuitos reales de Revesderecho, Katia y LHO) con propuestas de la comunidad; y tramo 3, **vínculo proyecto ↔ patrón con las galerías "hechos por la comunidad"** (ficha del patrón y `/explorar/proyectos`) y **pulido del buscador** (orden relevancia/populares/recientes, filtros avanzados de metraje e idioma y chips de filtros activos).
 - El repo quedó **limpio**: todo pusheado a `main`, CI en verde, deploy verificado en producción.
-- **Fase 5 — Mi tejido (parte 2), en curso**: tramo 1 (inventario de lana) construido —`stash_item` + `project_yarn` en la migración `0009`, `/mi-tejido/lanas` con "disponible = total − asignada" ya calculada, foto opcional, filtros por color/grosor, hub y hoja *Crear*, y 14 lanas demo—; queda verificar en producción. Plan: **2)** lanas en los proyectos (asignar del inventario o del catálogo, devolución al frogear/editar, `project_tool`, galería "Hechos por la comunidad" en la ficha de lana y filtro "Con mi lana"); **3)** Quiero tejer + Guardados y colecciones; **4)** meta anual.
+- **Fase 5 — Mi tejido (parte 2), en curso**: tramo 1 (inventario de lana) **hecho y verificado en producción** —`stash_item` + `project_yarn` en la migración `0009`, `/mi-tejido/lanas` con "disponible = total − asignada" ya calculada, foto opcional, filtros por color/grosor, hub y hoja *Crear*, y 14 lanas demo—. Plan: **2)** lanas en los proyectos (asignar del inventario o del catálogo, devolución al frogear/editar, `project_tool`, galería "Hechos por la comunidad" en la ficha de lana y filtro "Con mi lana"); **3)** Quiero tejer + Guardados y colecciones; **4)** meta anual.
 
 ## Próximos pasos (en orden)
 
-1. **Fase 5 — tramo 1: cerrar la verificación en producción**: esperar el CI del push del inventario, ver con `curl` que `/mi-tejido/lanas` redirige sin sesión y que prod está en el commit nuevo; dejar anotado en PROGRESS/ESTADO.
-2. **Fase 5 — tramo 2: lanas en los proyectos** (spec §5.3): sección "Lanas" en el detalle del proyecto para asignar del inventario (con la disponible en vivo) o del catálogo, con el descuento visible y la devolución al frogear/editar (ya garantizada por `project_yarn`); más `project_tool`, la galería "Hechos por la comunidad" en la ficha de la lana y el filtro "Con mi lana" en `/explorar/patrones`.
-3. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (el tramo 1 usó D-045 y D-046).
-4. Al cerrar cada tramo: gates (`pnpm typecheck && pnpm lint && pnpm test`; con e2e y `pnpm build` al cerrar fase), actualizar `ESTADO.md` (este archivo) y `PROGRESS.md`, commit + push en español, y verificar el CI (ver "Cómo retomar").
+1. **Fase 5 — tramo 2: lanas en los proyectos** (spec §5.3): sección "Lanas" en el detalle del proyecto para asignar del inventario (con la disponible en vivo) o del catálogo, con el descuento visible y la devolución al frogear/editar (ya garantizada por `project_yarn`); después, `project_tool`, la galería "Hechos por la comunidad" en la ficha de la lana y el filtro "Con mi lana" en `/explorar/patrones` (asignar acá también invalida los tags de caché de lanas/patrones que correspondan).
+2. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (el tramo 1 usó D-045 y D-046).
+3. Al cerrar cada tramo: gates (`pnpm typecheck && pnpm lint && pnpm test`; con e2e y `pnpm build` al cerrar fase), actualizar `ESTADO.md` (este archivo) y `PROGRESS.md`, commit + push en español, y verificar el CI y el deploy (ver "Cómo retomar").
 
 ## Pendientes que dependen del dueño (no frenan el código)
 
@@ -55,6 +54,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 
 ## Últimos hitos (para confirmar que estamos al día)
 
+- `eba93a5` — feat(inventario): inventario de lana con disponible calculada y foto (migración `0009`); CI verde y prod verificado (hub con "Tenés 5 lanas guardadas en el inventario, 10 ovillos en total" en la cuenta demo, `/mi-tejido/lanas` con las 5 lanas demo —Fil Piuma "Verde agua", "Disponible: 1 de 1 ovillo", carga libre "Lana de mi abuela", ubicación—, foto propia servida desde R2 (`/lanas/…`), formulario abierto con `?nueva=1` y las rutas privadas redirigiendo con la vuelta).
 - `e53d4dc` — feat(proyectos): vínculo con la biblioteca de patrones, galerías de la comunidad y pulido de búsqueda (migración `0008`); CI verde y prod verificado (`/explorar/proyectos` con los proyectos demo, galerías en Malu Hat / Bufanda fácil en Fil Piuma / Oso Toño, galería vacía honesta en el Chaleco XL, orden populares y filtros avanzados respondiendo, 307 con la vuelta en la ruta privada).
 - `64c9aa7` — docs(estado): tramo 2 de patrones cerrado y verificado en producción.
 - `df706b8` — feat(patrones): biblioteca de patrones con propuestas de la comunidad (migración `0007`); CI verde y prod verificado (lista con 20 patrones, búsqueda sin acentos, filtro crochet, ficha con datos verificados y enlace a la fuente, 404 real).
