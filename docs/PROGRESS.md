@@ -72,7 +72,7 @@ Pendiente para cerrar la fase (diferidos a propósito; no bloquean el cierre):
 - [x] Onboarding de bienvenida (`/bienvenida`, 2 de los 3 pasos; ver D-024) y perfil público (`/@usuario`) — ver arriba.
 - [x] Enlaces sociales ampliados (TikTok, Facebook y Pinterest) y tests e2e de auth y perfil con Playwright (`pnpm test:e2e`; ver D-029) — ver arriba.
 - [ ] **Dueño**: recorrer `/bienvenida` con su cuenta y mirar su perfil público (`/@suusuario`).
-- [ ] Avatar con subida a Cloudflare R2 (requiere tarjeta en Cloudflare → pedir OK al dueño) — sin R2, hoy se muestran iniciales. Diferido por el dueño para el final de la Fase 3 (las fotos de proyectos lo van a necesitar).
+- [ ] Avatar con subida a Cloudflare R2 — R2 ya está activado y probado (ver Fase 3), así que se implementa junto con las fotos de proyectos; sin fotos, hoy se muestran iniciales.
 - [ ] Sumar los e2e al CI cuando exista la rama de Neon de desarrollo (D-021) — hoy son locales.
 - [ ] Google OAuth (pospuesto) y decisión de dominio.
 - [ ] Opcional: pegar la `RESEND_API_KEY` también en `.env.local` para que los mails salgan desde la máquina local (sin ella, se registran en consola).
@@ -87,9 +87,12 @@ Hecho (proyectos):
 - **Cara pública**: página `/@usuario/proyectos/slug` sin login (con 404 real vía `proxy.ts`, D-031), sección "Proyectos" en el perfil público (últimos 6, respeta privacidad) y privacidad por proyecto: los privados se ven solo desde la cuenta dueña y el resto ve una tarjeta que lo explica.
 - **Calidad**: **61 tests** unitarios (slug, validaciones, conversiones del formulario) + **13 e2e** (5 nuevos: creación, estado, público/privado con visitante real y 404 de proyecto; `pnpm test:e2e`, 54 s) + build verde. Usuarios de prueba borrados al terminar.
 
+Hecho (infraestructura de imágenes, mismo día):
+- **Cloudflare R2 activado** (plan gratuito, 10 GB): bucket `ovillo`, token acotado *Object Read & Write*, credenciales en `.env.local` y módulo `storage/` con cliente lazy sobre `aws4fetch` + chequeo de humo real `pnpm storage:check` (sube, verifica y borra un objeto) en verde contra el bucket real (D-032). Pendiente del dueño: activar la **URL pública** del bucket (r2.dev) y pasarla; después, cargar las variables `R2_*` en Vercel antes de desplegar la primera subida de fotos.
+
 Pendiente de esta fase (próximos tramos):
 - [ ] Diario de avance (entradas con fecha, foto(s) y texto corto; "publicar en el feed" se guarda para Fase 7).
-- [ ] Fotos: galería de hasta 20 por proyecto, reordenable y con portada — **requiere activar Cloudflare R2** (pedir OK al dueño cuando lleguemos a ese tramo).
+- [ ] Fotos: galería de hasta 20 por proyecto, reordenable y con portada — R2 ya activado y probado (`pnpm storage:check`, D-032); falta la URL pública del bucket y las variables `R2_*` en Vercel antes de desplegar el tramo.
 - [ ] Contador de vueltas: varios por proyecto, botones grandes, recordatorio cada N vueltas, pantalla completa, modo offline con sincronización (spec §5.4).
 - [ ] Herramientas: inventario de agujas y ganchos (medidas con equivalencias).
 
