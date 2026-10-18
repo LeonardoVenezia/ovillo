@@ -131,11 +131,23 @@ test("sesión: cerrar sesión vuelve a la portada", async ({ page }) => {
   await signIn(page, EMAIL, PASSWORD);
   await expect(page).toHaveURL(/\/mi-tejido$/);
 
+  // Con sesión, la portada lleva al cuaderno en vez de pedir ingresar.
+  await page.goto("/");
+  await expect(
+    page.getByRole("link", { name: "Ir a Mi tejido" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Crear mi cuenta" })).toHaveCount(
+    0,
+  );
+
   await page.getByRole("button", { name: "Tu cuenta" }).click();
   await page.getByRole("menuitem", { name: "Cerrar sesión" }).click();
 
   await expect(page).toHaveURL("/");
   await expect(page.getByRole("button", { name: "Tu cuenta" })).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Crear mi cuenta" }),
+  ).toBeVisible();
 });
 
 test("contraseña: recuperación completa desde el email", async ({ page }) => {

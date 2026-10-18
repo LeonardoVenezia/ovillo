@@ -153,6 +153,14 @@ export const es = {
     ctaPrimary: "Crear mi cuenta",
     ctaSecondary: "Ingresar",
     note: "Es gratis, en español y sin vueltas: te toma menos de un minuto.",
+    welcomeEyebrow: "Tu taller",
+    welcomeGreeting: "Hola de nuevo,",
+    welcomeBody:
+      "Tus proyectos, tus avances y todo lo que estás tejiendo viven en Mi tejido.",
+    ctaMyWork: "Ir a Mi tejido",
+    ctaProfile: "Ver mi perfil",
+    welcomeNote:
+      "El feed de la comunidad llega en una próxima fase; mientras tanto, lo tuyo te espera en Mi tejido.",
   },
   create: {
     title: "Crear",
