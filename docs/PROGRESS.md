@@ -114,6 +114,8 @@ Hecho (herramientas, mismo día):
 - **Datos demo**: las cuentas demo ahora también tienen herramientas (María 7, Candela 3, Lupita 3, Sol 2: 15 en total, con materiales, cables y cantidades variadas).
 - **Calidad**: **108 tests** unitarios (17 nuevos: grilla de medidas, parseo con coma, topes, tablas ordenadas y sin repetidas) + **38 e2e** en verde — 8 nuevos (estado vacío y hub, alta con equivalencia, gancho y circular con cable, filtros, edición, borrado y privacidad). Build verde y repaso del flujo con un build de producción local.
 
+Cierre de la fase: commit `8060534`, CI en verde y deploy verificado en producción (hub con el resumen, grilla de las 7 herramientas de la cuenta demo, equivalencias en la tarjeta, tabla de equivalencias y filtro por tipo). Próxima fase: **Fase 4 — Catálogo**.
+
 Pendientes de la fase (anotados; no frenan el cierre):
 - [ ] (Calidad) e2e contra un build de producción (prefetching real): hoy `pnpm test:e2e` corre en dev y no ve esta clase de bugs; sumar un proyecto de Playwright contra `pnpm build` + `pnpm start` (o el deploy de preview).
 - [ ] (Diferido a propósito) Del tramo de fotos: campo de texto alternativo en la UI, `blurhash`, limpieza de imágenes huérfanas, editar entradas guardadas. Del contador: atajo en la hoja *Crear*, notificaciones del recordatorio, contadores compartidos entre proyectos. De herramientas: asignarlas a proyectos (`project_tool`, Fase 5) y avatar con subida (misma infraestructura de R2).
