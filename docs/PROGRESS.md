@@ -11,7 +11,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
 - [x] Fase 4 — Catálogo (lanas y patrones) — cerrada (tramos 1–3: lanas, patrones, galerías y pulido de búsqueda)
-- [ ] Fase 5 — Mi tejido (parte 2)
+- [ ] Fase 5 — Mi tejido (parte 2) — en curso (tramo 1 hecho: inventario de lana)
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
 - [ ] Fase 8 — Moderación, pulido y lanzamiento
@@ -171,3 +171,19 @@ Pendientes del tramo (no frenan; siguen):
 - [ ] Ampliar la siembra de patrones con metraje e idioma cuando haya fuentes verificables (los filtros avanzados ya funcionan; hoy solo los llena lo que propone la comunidad).
 
 Cierre de la fase: commit `e53d4dc` (+ docs del estado), CI en verde y deploy verificado en producción — hub con la tarjeta de proyectos viva, `/explorar/proyectos` con los proyectos demo, galerías "Hechos por la comunidad" en Malu Hat, Bufanda fácil en Fil Piuma y Oso Toño, galería vacía honesta en el Chaleco XL, orden populares y filtros avanzados (metraje/idioma) respondiendo, y las rutas privadas redirigiendo con la vuelta (`?patron=` incluido). Próxima fase: **Fase 5 — Mi tejido (parte 2): inventario de lanas**.
+
+## Fase 5 — Mi tejido (parte 2) (2026-10-18 → )
+
+Tramos: 1) **inventario de lana** (hecho) · 2) **lanas en los proyectos + "con mi lana"** · 3) **Quiero tejer + Guardados y colecciones** · 4) **meta anual**.
+
+Hecho (inventario de lana, tramo 1):
+- **Modelo** (spec §5.7/§6, migración `0009`): `stash_item` (lana del catálogo o carga libre, color, lote, ovillos/gramos/metros, ubicación, notas, visibilidad privada y foto opcional) y `project_yarn` (lana usada por proyecto: del inventario o del catálogo, en ovillos y/o gramos). La **cantidad disponible = total − asignada** se calcula al leer (proyectos activos), nunca se guarda ni se muta: por eso frogear o editar un proyecto devuelve la cantidad solo (criterio de aceptación de §5.7; la interfaz de asignación llega en el tramo 2). Ver D-045.
+- **Página `/mi-tejido/lanas`**: grilla en dos columnas con la foto (o la muestrita del color), nombre (marca + línea del catálogo o el propio), grosor, color, lote, cantidades ("3 ovillos · 300 g · 400 m"), **disponible** ("Disponible: 2 de 3 ovillos"; aviso ámbar si asignó de más), ubicación y notas; búsqueda sin acentos (nombre, marca, color, ubicación o lote) y filtros rápidos por color y grosor en chips (solo de lo que hay en el inventario). Alta y edición en línea, borrado con confirmación en dos pasos (con aviso si la lana está asignada). Privado siempre: sin sesión, el proxy manda a ingresar.
+- **Carga libre o del catálogo**: con lana del catálogo se elige del listado (`Katia · Fil Piuma`), los metros se sugieren en vivo desde la etiqueta (ovillos × metros) y el servidor completa gramos y metros si llegaron vacíos; en las cargas libres, el nombre propio es obligatorio y el grosor opcional. Foto opcional (una por lana, comprimida en el navegador y guardada en R2 con el destino `lana`; reemplazarla o quitarla limpia lo anterior). Ver D-046.
+- **Hub y hoja *Crear***: el hub de Mi tejido suma la tarjeta "Tus lanas" ("Tenés 5 lanas guardadas en el inventario, 10 ovillos en total") y la hoja *Crear* del botón central entra directo a `/mi-tejido/lanas?nueva=1` con el formulario abierto.
+- **Datos demo**: las cuentas demo ahora tienen inventario (María 5, Candela 4, Lupita 3, Sol 2, Tomi 0; 14 lanas en total, dos libres y el resto vinculadas al catálogo, con colores, lotes, ubicaciones y 3 con foto) para que se vea vivo en producción y vacío honesto en la cuenta recién llegada.
+- **Calidad**: **160 tests** unitarios (13 nuevos: parser de cantidades con punto de miles, contrato de carga libre vs. catálogo, topes y el cálculo de gramos/metros desde la etiqueta) + **63 e2e** en verde — 8 nuevos (registro, vacío con la hoja *Crear*, alta de carga libre con color/grosor/ubicación, alta del catálogo con metros sugeridos y foto real en R2, filtros combinados, edición y quitar foto, borrado, resumen del hub y privacidad). Build verde.
+
+Pendientes del tramo (no frenan; siguen):
+- [ ] Asignar lanas del inventario a los proyectos con descuento y devolución (`project_yarn`): tramo 2.
+- [ ] Galería "hechos por la comunidad" en la ficha de la lana y filtro "Con mi lana" en patrones: tramo 2.

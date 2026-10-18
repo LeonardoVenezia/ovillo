@@ -19,6 +19,7 @@ import { VerificationNotice } from "@/features/auth/components/verification-noti
 import { getProfileByUserId } from "@/features/profile/queries";
 import { ProjectCard } from "@/features/projects/components/project-card";
 import { listProjects, type Project } from "@/features/projects/queries";
+import { countStash } from "@/features/stash/queries";
 import { countTools } from "@/features/tools/queries";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
@@ -42,10 +43,11 @@ export default function MyWorkPage() {
 
 async function MyWorkContent() {
   const user = await requireUser();
-  const [profile, projects, toolsCount] = await Promise.all([
+  const [profile, projects, toolsCount, stash] = await Promise.all([
     getProfileByUserId(user.id),
     listProjects(user.id),
     countTools(user.id),
+    countStash(user.id),
   ]);
   const profileStarted = (profile?.crafts.length ?? 0) > 0;
 
@@ -145,6 +147,18 @@ async function MyWorkContent() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">{es.stash.hubTitle}</CardTitle>
+          <CardDescription>{stashSummary(stash)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <Link href="/mi-tejido/lanas">{es.stash.hubCta}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">{es.tools.hubTitle}</CardTitle>
           <CardDescription>{toolsSummary(toolsCount)}</CardDescription>
         </CardHeader>
@@ -199,4 +213,20 @@ function toolsSummary(count: number): string {
     return es.tools.hubCountOne;
   }
   return es.tools.hubCount.replace("{count}", String(count));
+}
+
+/** "Tenés 8 lanas guardadas, 23 ovillos en total": resumen para el hub. */
+function stashSummary(stash: { items: number; skeins: number }): string {
+  if (stash.items === 0) {
+    return es.stash.hubEmpty;
+  }
+  if (stash.items === 1) {
+    return es.stash.hubCountOne;
+  }
+  if (stash.skeins > 0) {
+    return es.stash.hubCountSkeins
+      .replace("{count}", String(stash.items))
+      .replace("{skeins}", String(stash.skeins));
+  }
+  return es.stash.hubCount.replace("{count}", String(stash.items));
 }

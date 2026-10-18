@@ -10,6 +10,7 @@ import { deflateSync } from "node:zlib";
 
 import { MEDIA_LIMITS } from "../features/projects/media-schemas";
 import { thumbKeyFor } from "../features/projects/media-view";
+import { suggestCatalogAmounts } from "../features/stash/schemas";
 import { deleteObject, putObject } from "../storage";
 import { account, user } from "./auth-schema";
 import { rowCounter } from "./counter-schema";
@@ -19,6 +20,8 @@ import { image, projectEntry, projectPhoto } from "./media-schema";
 import { profile, type ProfileLink } from "./profile-schema";
 import { pattern } from "./pattern-schema";
 import { project, type ProjectStatus } from "./project-schema";
+import { stashItem, type ColorFamily } from "./stash-schema";
+import { yarn, yarnBrand, type YarnWeight } from "./yarn-schema";
 
 /**
  * Datos de prueba ("demo") para ver la app llena antes de abrir el registro
@@ -105,6 +108,8 @@ type UserSpec = {
   withProfile?: boolean;
   /** Herramientas del inventario (spec §5.7) de la cuenta. */
   tools?: ToolSpec[];
+  /** Lanas del inventario (spec §5.7) de la cuenta. */
+  stash?: StashSpec[];
   projects: ProjectSpec[];
 };
 
@@ -115,6 +120,23 @@ type ToolSpec = {
   lengthCm?: number;
   quantity?: number;
   notes?: string;
+};
+
+type StashSpec = {
+  /** Lana del catálogo como `marca/slug`; sin esto, es carga libre. */
+  yarnSlug?: string;
+  customName?: string;
+  colorway?: string;
+  colorFamily?: ColorFamily;
+  /** Grosor solo en cargas libres (D-046). */
+  weight?: YarnWeight;
+  dyeLot?: string;
+  skeins?: number;
+  grams?: number;
+  metersTotal?: number;
+  location?: string;
+  notes?: string;
+  photo?: PhotoSpec;
 };
 
 // ---------------------------------------------------------------------------
@@ -171,6 +193,58 @@ const DEMO_USERS: UserSpec[] = [
         material: "resina",
         quantity: 2,
         notes: "El de mango ergonómico y el de siempre.",
+      },
+    ],
+    stash: [
+      {
+        yarnSlug: "katia/fil-piuma",
+        colorway: "Verde agua",
+        colorFamily: "verde",
+        skeins: 1,
+        location: "Caja azul del placard",
+        notes: "Sobró de la bufanda de mi hermana.",
+        photo: {
+          alt: "Ovillo verde agua junto a la bufanda terminada",
+          colors: TEAL,
+          aspect: "s",
+        },
+      },
+      {
+        customName: "Merino mostaza de la feria",
+        colorFamily: "amarillo",
+        weight: "worsted",
+        skeins: 4,
+        location: "Bolsa de la feria",
+        notes: "Para el sweater de otoño; me sobró un ovillo.",
+        photo: {
+          alt: "Ovillos mostaza sobre la mesa de madera",
+          colors: MOSTAZA,
+          aspect: "s",
+        },
+      },
+      {
+        yarnSlug: "hilados-lho/fidelio",
+        colorway: "Terracota",
+        colorFamily: "naranja",
+        dyeLot: "L-2417",
+        skeins: 2,
+        location: "Caja azul del placard",
+      },
+      {
+        yarnSlug: "hilos-omega/sinfonia",
+        colorway: "Crudo",
+        colorFamily: "blanco",
+        grams: 60,
+        location: "Costurero de la abuela",
+        notes: "Restos del vestido de Sofía.",
+      },
+      {
+        customName: "Lana de mi abuela",
+        colorFamily: "gris",
+        weight: "dk",
+        skeins: 3,
+        location: "Ropero",
+        notes: "La guardo para un gorro de invierno.",
       },
     ],
     projects: [
@@ -344,6 +418,40 @@ const DEMO_USERS: UserSpec[] = [
         notes: "Regalo del cumple.",
       },
     ],
+    stash: [
+      {
+        yarnSlug: "lanas-stop/olaf",
+        colorway: "Verde bosque",
+        colorFamily: "verde",
+        skeins: 3,
+        location: "Canasto del living",
+        photo: {
+          alt: "Tres ovillos verde bosque apilados",
+          colors: TEAL,
+          aspect: "s",
+        },
+      },
+      {
+        yarnSlug: "revesderecho/cotton",
+        colorway: "Crudo",
+        colorFamily: "blanco",
+        skeins: 2,
+        location: "Canasto del living",
+      },
+      {
+        customName: "Algodón teñido a mano",
+        colorFamily: "multicolor",
+        weight: "sport",
+        skeins: 1,
+        notes: "Lo teñí con cáscara de cebolla, ¡quedó precioso!",
+      },
+      {
+        yarnSlug: "tamm/alpes",
+        colorway: "Marrón chocolate",
+        colorFamily: "marron",
+        skeins: 2,
+      },
+    ],
     projects: [
       {
         slug: "manta-granny",
@@ -475,6 +583,35 @@ const DEMO_USERS: UserSpec[] = [
         material: "acero",
         quantity: 2,
         notes: "Dos juegos de 5 para mitones.",
+      },
+    ],
+    stash: [
+      {
+        yarnSlug: "katia/cotton-merino",
+        colorway: "Rojo coral",
+        colorFamily: "rojo",
+        skeins: 2,
+        location: "Caja de tela",
+        photo: {
+          alt: "Ovillos rojo coral sobre una manta tejida",
+          colors: TERRACOTA,
+          aspect: "s",
+        },
+      },
+      {
+        yarnSlug: "katia/merino-seta",
+        colorway: "Negro",
+        colorFamily: "negro",
+        skeins: 1,
+        location: "Caja de tela",
+      },
+      {
+        customName: "Restos de algodón",
+        colorFamily: "multicolor",
+        weight: "fingering",
+        grams: 250,
+        location: "Bolsa de restos",
+        notes: "Para amigurumis chicos.",
       },
     ],
     projects: [
@@ -620,6 +757,23 @@ const DEMO_USERS: UserSpec[] = [
     tools: [
       { kind: "rectas", sizeMm: 3.75, material: "aluminio" },
       { kind: "rectas", sizeMm: 4.5, material: "bambu" },
+    ],
+    stash: [
+      {
+        yarnSlug: "modista/diana",
+        colorway: "Violeta profundo",
+        colorFamily: "violeta",
+        skeins: 3,
+        location: "Placard de arriba",
+      },
+      {
+        yarnSlug: "katia/azteca-felting-wool",
+        colorway: "Gris perla",
+        colorFamily: "gris",
+        skeins: 2,
+        location: "Placard de arriba",
+        notes: "Para el bolso que quiero fieltrar.",
+      },
     ],
     projects: [
       {
@@ -874,13 +1028,13 @@ let seedCounter = 1;
 /** Genera una foto (grande + miniatura), la sube a R2 y guarda su fila. */
 async function uploadPhoto(
   ownerId: string,
-  projectId: string,
+  prefix: string,
   spec: PhotoSpec,
   tempDir: string,
 ): Promise<string> {
   const [width, height] = ASPECTS[spec.aspect ?? "h"];
   const imageId = createId();
-  const r2Key = `proyectos/${projectId}/${imageId}.jpg`;
+  const r2Key = `${prefix}/${imageId}.jpg`;
 
   const seed = seedCounter++;
   const pngPath = join(tempDir, `${imageId}.png`);
@@ -938,6 +1092,22 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
     .from(pattern);
   const patternIds = new Map(patternRows.map((row) => [row.slug, row.id]));
 
+  // Las lanas del catálogo se siembran aparte (`pnpm db:seed-yarns`): el
+  // inventario demo resuelve sus vínculos por `marca/slug`.
+  const yarnRows = await db
+    .select({
+      id: yarn.id,
+      slug: yarn.slug,
+      meters: yarn.meters,
+      grams: yarn.grams,
+      brandSlug: yarnBrand.slug,
+    })
+    .from(yarn)
+    .innerJoin(yarnBrand, eq(yarn.brandId, yarnBrand.id));
+  const yarnsByPath = new Map(
+    yarnRows.map((row) => [`${row.brandSlug}/${row.slug}`, row]),
+  );
+
   await db.insert(user).values({
     id: userId,
     name: spec.name,
@@ -980,6 +1150,7 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   let entryCount = 0;
   let counterCount = 0;
   let toolCount = 0;
+  let stashCount = 0;
 
   try {
     for (const projectSpec of spec.projects) {
@@ -1022,7 +1193,12 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
 
       const galleryIds: string[] = [];
       for (const [position, photo] of projectSpec.photos.entries()) {
-        const imageId = await uploadPhoto(userId, projectId, photo, tempDir);
+        const imageId = await uploadPhoto(
+          userId,
+          `proyectos/${projectId}`,
+          photo,
+          tempDir,
+        );
         galleryIds.push(imageId);
         photoCount++;
         await db.insert(projectPhoto).values({
@@ -1047,7 +1223,9 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
       for (const entry of projectSpec.entries ?? []) {
         const imageIds: string[] = [];
         for (const photo of entry.photos ?? []) {
-          imageIds.push(await uploadPhoto(userId, projectId, photo, tempDir));
+          imageIds.push(
+            await uploadPhoto(userId, `proyectos/${projectId}`, photo, tempDir),
+          );
           photoCount++;
         }
         entryCount++;
@@ -1091,13 +1269,74 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
         updatedAt: createdAt,
       });
     }
+
+    for (const stashSpec of spec.stash ?? []) {
+      const stashId = createId();
+      let yarnId: string | null = null;
+      let catalog: { meters: number | null; grams: number | null } | null =
+        null;
+
+      if (stashSpec.yarnSlug) {
+        const resolved = yarnsByPath.get(stashSpec.yarnSlug);
+        if (!resolved) {
+          console.warn(
+            `  Aviso: no existe la lana "${stashSpec.yarnSlug}" para el inventario (¿corriste pnpm db:seed-yarns?).`,
+          );
+          continue;
+        }
+        yarnId = resolved.id;
+        catalog = { meters: resolved.meters, grams: resolved.grams };
+      } else if (!stashSpec.customName) {
+        console.warn("  Aviso: una lana de carga libre quedó sin nombre.");
+        continue;
+      }
+
+      // Mismo cálculo que la app: sin lana vinculada no se completa nada.
+      const amounts = suggestCatalogAmounts({
+        skeins: stashSpec.skeins ?? null,
+        grams: stashSpec.grams ?? null,
+        metersTotal: stashSpec.metersTotal ?? null,
+        yarn: catalog,
+      });
+
+      let stashImageId: string | null = null;
+      if (stashSpec.photo) {
+        stashImageId = await uploadPhoto(
+          userId,
+          `lanas/${stashId}`,
+          stashSpec.photo,
+          tempDir,
+        );
+        photoCount++;
+      }
+
+      stashCount++;
+      await db.insert(stashItem).values({
+        id: stashId,
+        userId,
+        yarnId,
+        customName: yarnId === null ? (stashSpec.customName ?? null) : null,
+        colorway: stashSpec.colorway ?? null,
+        colorFamily: stashSpec.colorFamily ?? null,
+        weight: yarnId === null ? (stashSpec.weight ?? null) : null,
+        dyeLot: stashSpec.dyeLot ?? null,
+        skeins: stashSpec.skeins ?? null,
+        grams: amounts.grams,
+        metersTotal: amounts.metersTotal,
+        location: stashSpec.location ?? null,
+        notes: stashSpec.notes ?? null,
+        imageId: stashImageId,
+        createdAt,
+        updatedAt: createdAt,
+      });
+    }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
 
   const projectCount = spec.projects.length;
   console.log(
-    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s)`,
+    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s), ${stashCount} lana(s)`,
   );
 }
 
@@ -1130,6 +1369,9 @@ async function main(): Promise<void> {
   console.log("");
   console.log(
     "Páginas para mirar: /@mariaruiz, /@candelateje, /@lupitateje, /@solaguirre (perfil privado) y /@tomiteje (cuenta recién llegada)",
+  );
+  console.log(
+    "Con demo.mariaruiz@ovillo.test: /mi-tejido/lanas tiene 5 lanas (2 con foto) y /mi-tejido/herramientas, 7 herramientas.",
   );
 }
 

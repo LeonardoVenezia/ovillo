@@ -186,6 +186,43 @@ export async function listBrands(): Promise<YarnBrandOption[]> {
     .orderBy(asc(yarnBrand.name));
 }
 
+export type YarnOption = {
+  id: string;
+  name: string;
+  slug: string;
+  weight: YarnWeight;
+  meters: number | null;
+  grams: number | null;
+  brandName: string;
+  brandSlug: string;
+};
+
+/**
+ * Lanas del catálogo listas para elegir (inventario de lana, D-046): de la
+ * marca A a la Z, con el grosor y las medidas del ovillo para sugerir
+ * gramos y metros.
+ */
+export async function listYarnOptions(): Promise<YarnOption[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("lanas");
+
+  return getDb()
+    .select({
+      id: yarn.id,
+      name: yarn.name,
+      slug: yarn.slug,
+      weight: yarn.weight,
+      meters: yarn.meters,
+      grams: yarn.grams,
+      brandName: yarnBrand.name,
+      brandSlug: yarnBrand.slug,
+    })
+    .from(yarn)
+    .innerJoin(yarnBrand, eq(yarn.brandId, yarnBrand.id))
+    .orderBy(asc(yarnBrand.name), asc(yarn.name));
+}
+
 /** Lana propia por id (para editar): autorización en un solo lugar. */
 export async function getOwnYarn(
   userId: string,

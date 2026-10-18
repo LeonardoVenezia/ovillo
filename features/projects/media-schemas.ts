@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Límites de fotos y diario (spec §5.3).
+ * Límites de fotos y diario (spec §5.3) y de la foto del inventario (D-046).
  *
  * El cliente comprime antes de subir (≤ 1600 px y calidad ajustada); estos
  * topes son la red de seguridad del servidor y la que protege los 10 GB
@@ -24,7 +24,7 @@ export const MEDIA_LIMITS = {
   maxEdge: 4096,
 } as const;
 
-export const UPLOAD_PURPOSES = ["galeria", "entrada"] as const;
+export const UPLOAD_PURPOSES = ["galeria", "entrada", "lana"] as const;
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
 
 export function isUploadPurpose(value: string): value is UploadPurpose {

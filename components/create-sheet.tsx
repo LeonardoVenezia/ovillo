@@ -36,7 +36,11 @@ const items: { icon: LucideIcon; label: string; href?: string }[] = [
     label: es.create.items.entry,
     href: "/mi-tejido/proyectos",
   },
-  { icon: PackagePlus, label: es.create.items.yarn },
+  {
+    icon: PackagePlus,
+    label: es.create.items.yarn,
+    href: "/mi-tejido/lanas?nueva=1",
+  },
   { icon: CircleHelp, label: es.create.items.question },
   { icon: BookOpen, label: es.create.items.pattern },
 ];
