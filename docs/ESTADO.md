@@ -4,7 +4,7 @@
 > **Se lee al empezar cada sesión y se actualiza al cerrar cada tramo** — aunque la fase no haya terminado, incluso a mitad de una tarea.
 > El histórico completo por fase está en `PROGRESS.md`; las decisiones, en `DECISIONS.md`.
 
-Última actualización: **2026-10-18** · Último commit: **`3a51b79`** (CI en verde)
+Última actualización: **2026-10-18** · Repo limpio y CI en verde (ver "Últimos hitos" al final)
 Producción: <https://ovillo-sepia.vercel.app>
 
 ## Resumen
