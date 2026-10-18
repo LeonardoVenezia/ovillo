@@ -16,3 +16,4 @@ export * from "./auth-schema";
 export * from "./profile-schema";
 export * from "./project-schema";
 export * from "./media-schema";
+export * from "./counter-schema";

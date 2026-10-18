@@ -8,7 +8,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 0 — Repo y documentación
 - [x] Fase 1 — Base del proyecto (deploy en Vercel + base Neon conectada)
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
-- [ ] Fase 3 — Mi tejido (parte 1) ← en curso (proyectos, diario y fotos hechos)
+- [ ] Fase 3 — Mi tejido (parte 1) ← en curso (proyectos, diario, fotos y contador hechos)
 - [ ] Fase 4 — Catálogo (lanas y patrones)
 - [ ] Fase 5 — Mi tejido (parte 2)
 - [ ] Fase 6 — Comunidad
@@ -100,10 +100,15 @@ Hecho (diario de avance y fotos, mismo día):
 Hecho (datos de prueba, mismo día):
 - **Cuentas y contenido demo** (D-034): `pnpm db:seed-demo` siembra 5 cuentas (`@mariaruiz`, `@candelateje`, `@lupitateje`, `@solaguirre` con perfil privado y `@tomiteje` recién llegada) con 11 proyectos de estados y técnicas variadas (uno privado y uno sin portada), 27 fotos generadas localmente y 14 entradas de diario. Re-ejecutarlo re-siembra desde cero; `--clean` solo borra. Contraseña compartida: `ovillo-demo-2026`.
 
+Hecho (contador de vueltas, mismo día):
+- **Contador de vueltas** (spec §5.4): hasta 10 contadores por proyecto ("cuerpo", "manga izq.") con nombre y recordatorio opcional *cada N vueltas*. Conteo rápido desde el detalle del proyecto y **pantalla completa** en `/contador/[id]`: botón +1 gigante, −1, reinicio con confirmación en dos pasos, aviso al llegar al múltiplo ("aumentar cada 6") con vibración, pantalla siempre encendida (Wake Lock cuando el navegador lo permite) y flechas ↑/↓ con teclado en escritorio.
+- **Sin conexión de verdad**: cada toque se guarda al instante en el teléfono y sincroniza solo al volver la conexión (versión por contador para resolver conflictos; el registro local no se borra al sincronizar, D-035). La página pública del proyecto no muestra los contadores (son privados).
+- **Modelo**: migración `0004` (`row_counter`, con `version`, `repeat_every` y conteo 0–99999).
+- **Calidad**: **91 tests** unitarios (14 nuevos: topes, recordatorio, resolución de conflictos) + **30 e2e** en verde — 8 nuevos, incluido uno que corta la red de verdad (`setOffline`), cuenta sin conexión y verifica que sincronice al volver. Build verde.
+
 Pendiente de esta fase (próximos tramos):
-- [ ] Contador de vueltas: varios por proyecto, botones grandes, recordatorio cada N vueltas, pantalla completa, modo offline con sincronización (spec §5.4).
 - [ ] Herramientas: inventario de agujas y ganchos (medidas con equivalencias).
-- [ ] (Del tramo de fotos, diferido a propósito): campo de texto alternativo en la UI, `blurhash`, limpieza de imágenes huérfanas, editar entradas guardadas.
+- [ ] (Diferido a propósito) Del tramo de fotos: campo de texto alternativo en la UI, `blurhash`, limpieza de imágenes huérfanas, editar entradas guardadas. Del contador: atajo en la hoja *Crear*, notificaciones del recordatorio, contadores compartidos entre proyectos.
 
 Notas:
 - Por ahora dev y producción comparten la misma base Neon (D-021); antes del registro público hace falta una rama de desarrollo.

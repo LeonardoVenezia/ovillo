@@ -29,6 +29,13 @@
       "when": 1792289184625,
       "tag": "0003_freezing_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792292272040,
+      "tag": "0004_jittery_fixer",
+      "breakpoints": true
     }
   ]
 }

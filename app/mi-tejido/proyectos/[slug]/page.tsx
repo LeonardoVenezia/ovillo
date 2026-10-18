@@ -6,6 +6,8 @@ import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProjectCounters } from "@/features/counters/components/counter-list";
+import { listProjectCounters } from "@/features/counters/queries";
 import { isCraft } from "@/features/profile/constants";
 import { DeleteProjectButton } from "@/features/projects/components/delete-project-button";
 import { ProgressBar } from "@/features/projects/components/progress-bar";
@@ -50,9 +52,10 @@ async function ProjectDetail({ slug }: { slug: string }) {
     notFound();
   }
 
-  const [photos, entries] = await Promise.all([
+  const [photos, entries, counters] = await Promise.all([
     listProjectPhotos(project.id),
     listProjectEntries(project.id),
+    listProjectCounters(project.id),
   ]);
 
   const craftLabel =
@@ -199,6 +202,17 @@ async function ProjectDetail({ slug }: { slug: string }) {
       />
 
       <ProjectDiary projectId={project.id} entries={toEntryViews(entries)} />
+
+      <ProjectCounters
+        projectId={project.id}
+        counters={counters.map((counter) => ({
+          id: counter.id,
+          name: counter.name,
+          count: counter.count,
+          version: counter.version,
+          repeatEvery: counter.repeatEvery,
+        }))}
+      />
 
       <div className="border-border border-t pt-4">
         <DeleteProjectButton projectId={project.id} />

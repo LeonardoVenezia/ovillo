@@ -88,6 +88,7 @@ export async function proxy(request: NextRequest) {
   const isPrivate =
     pathname === "/bienvenida" ||
     pathname.startsWith("/mi-tejido") ||
+    pathname.startsWith("/contador") ||
     pathname.startsWith("/configuracion");
   if (!isPrivate) {
     return NextResponse.next();
@@ -110,6 +111,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/mi-tejido/:path*",
+    "/contador/:path*",
     "/configuracion/:path*",
     "/bienvenida",
     "/:username",
