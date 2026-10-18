@@ -12,6 +12,7 @@ import { MEDIA_LIMITS } from "../features/projects/media-schemas";
 import { thumbKeyFor } from "../features/projects/media-view";
 import { deleteObject, putObject } from "../storage";
 import { account, user } from "./auth-schema";
+import { rowCounter } from "./counter-schema";
 import { getDb } from "./index";
 import { image, projectEntry, projectPhoto } from "./media-schema";
 import { profile, type ProfileLink } from "./profile-schema";
@@ -81,6 +82,8 @@ type ProjectSpec = {
   coverIndex?: number;
   photos: PhotoSpec[];
   entries?: EntrySpec[];
+  /** Contadores de vueltas (spec §5.4) que quedan abiertos en el proyecto. */
+  counters?: { name: string; count: number; repeatEvery?: number }[];
 };
 
 type UserSpec = {
@@ -188,6 +191,10 @@ const DEMO_USERS: UserSpec[] = [
             daysAgo: 2,
             body: "Lo probé con alfileres y me queda. Falta bloquear y esconder hebras.",
           },
+        ],
+        counters: [
+          { name: "Cuerpo", count: 84, repeatEvery: 6 },
+          { name: "Manga izq.", count: 18 },
         ],
       },
       {
@@ -326,6 +333,7 @@ const DEMO_USERS: UserSpec[] = [
             body: "La dejé en pausa hasta que llegue el algodón nuevo.",
           },
         ],
+        counters: [{ name: "Cuadrados", count: 25 }],
       },
       {
         slug: "amigurumi-sobrina",
@@ -524,6 +532,7 @@ const DEMO_USERS: UserSpec[] = [
             ],
           },
         ],
+        counters: [{ name: "Canesú", count: 32, repeatEvery: 8 }],
       },
     ],
   },
@@ -888,6 +897,7 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   const tempDir = mkdtempSync(join(tmpdir(), "ovillo-seed-"));
   let photoCount = 0;
   let entryCount = 0;
+  let counterCount = 0;
 
   try {
     for (const projectSpec of spec.projects) {
@@ -958,6 +968,19 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
           createdAt: daysAgoDate(entry.daysAgo),
         });
       }
+
+      for (const counter of projectSpec.counters ?? []) {
+        counterCount++;
+        await db.insert(rowCounter).values({
+          id: createId(),
+          projectId,
+          name: counter.name,
+          count: counter.count,
+          repeatEvery: counter.repeatEvery ?? null,
+          createdAt: daysAgoDate(projectSpec.createdDaysAgo),
+          updatedAt: daysAgoDate(projectSpec.updatedDaysAgo),
+        });
+      }
     }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
@@ -965,7 +988,7 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
 
   const projectCount = spec.projects.length;
   console.log(
-    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s)`,
+    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es)`,
   );
 }
 
