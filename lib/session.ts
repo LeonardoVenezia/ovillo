@@ -9,7 +9,8 @@ import { getAuth } from "./auth";
  * Patrón Next 16 + Cache Components: la lectura del request vive dentro de
  * `use cache: private`, que nunca se cachea en el servidor, y quien la use
  * debe estar debajo de un `<Suspense>` (guía "Authentication with Cache
- * Components"). Devolvemos solo los campos que la UI necesita.
+ * Components"). Los Route Handlers usan `getUserFromRequest`, que no cachea
+ * nada. Devolvemos solo los campos que la UI necesita.
  */
 
 export type SessionUser = {
@@ -21,10 +22,18 @@ export type SessionUser = {
   image: string | null;
 };
 
-export async function getOptionalUser(): Promise<SessionUser | null> {
-  "use cache: private";
+/** Lo mínimo que usamos de la sesión de Better Auth (tipado estructural). */
+type SessionLike = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+    image?: string | null;
+  };
+} | null;
 
-  const session = await getAuth().api.getSession({ headers: await headers() });
+function toSessionUser(session: SessionLike): SessionUser | null {
   if (!session) {
     return null;
   }
@@ -42,6 +51,21 @@ export async function getOptionalUser(): Promise<SessionUser | null> {
     emailVerified: session.user.emailVerified,
     image: session.user.image ?? null,
   };
+}
+
+export async function getOptionalUser(): Promise<SessionUser | null> {
+  "use cache: private";
+
+  const session = await getAuth().api.getSession({ headers: await headers() });
+  return toSessionUser(session);
+}
+
+/** Como `getOptionalUser` pero para Route Handlers (sin cache privada). */
+export async function getUserFromRequest(
+  request: Request,
+): Promise<SessionUser | null> {
+  const session = await getAuth().api.getSession({ headers: request.headers });
+  return toSessionUser(session);
 }
 
 /** Como `getOptionalUser` pero redirige al ingreso si no hay sesión. */

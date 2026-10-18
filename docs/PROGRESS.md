@@ -8,7 +8,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 0 — Repo y documentación
 - [x] Fase 1 — Base del proyecto (deploy en Vercel + base Neon conectada)
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
-- [ ] Fase 3 — Mi tejido (parte 1) ← en curso (proyectos hechos)
+- [ ] Fase 3 — Mi tejido (parte 1) ← en curso (proyectos, diario y fotos hechos)
 - [ ] Fase 4 — Catálogo (lanas y patrones)
 - [ ] Fase 5 — Mi tejido (parte 2)
 - [ ] Fase 6 — Comunidad
@@ -72,7 +72,7 @@ Pendiente para cerrar la fase (diferidos a propósito; no bloquean el cierre):
 - [x] Onboarding de bienvenida (`/bienvenida`, 2 de los 3 pasos; ver D-024) y perfil público (`/@usuario`) — ver arriba.
 - [x] Enlaces sociales ampliados (TikTok, Facebook y Pinterest) y tests e2e de auth y perfil con Playwright (`pnpm test:e2e`; ver D-029) — ver arriba.
 - [ ] **Dueño**: recorrer `/bienvenida` con su cuenta y mirar su perfil público (`/@suusuario`).
-- [ ] Avatar con subida a Cloudflare R2 — R2 ya está activado y probado (ver Fase 3), así que se implementa junto con las fotos de proyectos; sin fotos, hoy se muestran iniciales.
+- [ ] Avatar con subida a Cloudflare R2 — la infraestructura de imágenes ya está andando (ver D-033), así que se implementa con la misma base; sin fotos, hoy se muestran iniciales.
 - [ ] Sumar los e2e al CI cuando exista la rama de Neon de desarrollo (D-021) — hoy son locales.
 - [ ] Google OAuth (pospuesto) y decisión de dominio.
 - [ ] Opcional: pegar la `RESEND_API_KEY` también en `.env.local` para que los mails salgan desde la máquina local (sin ella, se registran en consola).
@@ -88,15 +88,21 @@ Hecho (proyectos):
 - **Calidad**: **61 tests** unitarios (slug, validaciones, conversiones del formulario) + **13 e2e** (5 nuevos: creación, estado, público/privado con visitante real y 404 de proyecto; `pnpm test:e2e`, 54 s) + build verde. Usuarios de prueba borrados al terminar.
 
 Hecho (infraestructura de imágenes, mismo día):
-- **Cloudflare R2 activado** (plan gratuito, 10 GB): bucket `ovillo`, token acotado *Object Read & Write*, credenciales en `.env.local` y módulo `storage/` con cliente lazy sobre `aws4fetch` + chequeo de humo real `pnpm storage:check` (sube, verifica y borra un objeto) en verde contra el bucket real (D-032). Pendiente del dueño: activar la **URL pública** del bucket (r2.dev) y pasarla; después, cargar las variables `R2_*` en Vercel antes de desplegar la primera subida de fotos.
+- **Cloudflare R2 activado** (plan gratuito, 10 GB): bucket `ovillo`, token acotado *Object Read & Write*, credenciales en `.env.local` y módulo `storage/` con cliente lazy sobre `aws4fetch` + chequeo de humo real `pnpm storage:check` (sube, verifica y borra un objeto) en verde contra el bucket real (D-032). La **URL pública** del bucket (r2.dev) quedó activada y el chequeo confirma la lectura pública. Falta solo cargar las variables `R2_*` en Vercel (5) antes de desplegar el tramo de fotos.
+
+Hecho (diario de avance y fotos, mismo día):
+- **Diario de avance** (spec §5.3): entradas con fecha (hoy por defecto), texto corto (hasta 500 caracteres) y hasta 4 fotos, con vista previa antes de guardar, confirmación en dos pasos para borrar y lista ordenada de lo más reciente primero. Entra desde la hoja *Crear* ("Entrada de diario" ahora lleva a elegir proyecto) y desde el detalle de cada proyecto. "Publicar en el feed" se guarda para Fase 7 (la columna `share_to_feed` ya está reservada).
+- **Fotos del proyecto**: galería de hasta 20 por proyecto, reordenable, con **portada** (la primera subida es portada hasta elegir otra; al borrar la portada, pasa a la siguiente) y visor a pantalla completa con las acciones grandes para el celular. La página pública muestra la portada como imagen principal, la galería y el diario, y **comparte la portada en Open Graph**.
+- **Cuidado de los 10 GB** (pedido del dueño): las fotos se **comprimen en el navegador** antes de subir (JPEG ≤ 1600 px + miniatura ≤ 640 px, ~150–400 KB por foto: alcanza para más de 20.000 fotos) y el servidor aplica **topes duros** (JPEG, 1,5 MB / 400 KB, galería 20, entrada 4). La subida va por `POST /api/fotos` (Route Handler para binarios) con autenticación y validación de dueña (D-033).
+- **Modelo**: migración `0003` (`image`, `project_photo`, `project_entry` + `project.cover_image_id`). Al borrar una foto o una entrada se borran también sus objetos de R2.
+- **Calidad**: **76 tests** unitarios + **22 e2e** en verde — 9 nuevos que suben fotos de verdad al bucket (comprimen en el navegador, esperan que las imágenes carguen desde la URL pública de R2), cambian portada, reordenan, guardan una entrada con foto, la ven sin sesión con el Open Graph correcto y borran todo; la limpieza de usuarios de prueba ahora también borra sus objetos de R2. Build verde.
 
 Pendiente de esta fase (próximos tramos):
-- [ ] Diario de avance (entradas con fecha, foto(s) y texto corto; "publicar en el feed" se guarda para Fase 7).
-- [ ] Fotos: galería de hasta 20 por proyecto, reordenable y con portada — R2 ya activado y probado (`pnpm storage:check`, D-032); falta la URL pública del bucket y las variables `R2_*` en Vercel antes de desplegar el tramo.
 - [ ] Contador de vueltas: varios por proyecto, botones grandes, recordatorio cada N vueltas, pantalla completa, modo offline con sincronización (spec §5.4).
 - [ ] Herramientas: inventario de agujas y ganchos (medidas con equivalencias).
+- [ ] (Del tramo de fotos, diferido a propósito): campo de texto alternativo en la UI, `blurhash`, limpieza de imágenes huérfanas, editar entradas guardadas.
 
 Notas:
 - Por ahora dev y producción comparten la misma base Neon (D-021); antes del registro público hace falta una rama de desarrollo.
 - La migración `0000` es la primera del repo; `db/auth-schema.ts` se regenera con el CLI (D-022), no se edita a mano.
-- Las migraciones `0001` (`profile`) y `0002` (`project`) ya están aplicadas; se generan y aplican solo con `pnpm db:generate` + `pnpm db:migrate`.
+- Las migraciones `0001` (`profile`), `0002` (`project`) y `0003` (`image`, `project_photo`, `project_entry`) ya están aplicadas; se generan y aplican solo con `pnpm db:generate` + `pnpm db:migrate`.

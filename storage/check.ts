@@ -1,29 +1,24 @@
 import { config } from "dotenv";
 
-import { getR2, objectUrl } from "./index";
+import { deleteObject, getR2, putObject } from "./index";
 
 // Igual que Next.js en desarrollo: .env.local pisa a .env (dotenv/config solo lee .env).
 config({ path: [".env.local", ".env"], quiet: true });
 
 /**
  * Chequeo de Cloudflare R2 (`pnpm storage:check`): sube un objeto de prueba,
- * verifica la lectura pública si hay URL configurada y lo borra.
+ * verifica la lectura pública si hay URL configurada y lo borra. Usa los
+ * mismos helpers que la app (si esto anda, la subida de fotos también).
  */
 
 async function main() {
   const r2 = getR2();
   const key = `pruebas/chequeo-${Date.now()}.txt`;
-  const url = objectUrl(key);
-  const body = `Ovillo: chequeo de almacenamiento (${new Date().toISOString()})`;
+  const body = new TextEncoder().encode(
+    `Ovillo: chequeo de almacenamiento (${new Date().toISOString()})`,
+  );
 
-  const put = await r2.client.fetch(url, {
-    method: "PUT",
-    body,
-    headers: { "content-type": "text/plain; charset=utf-8" },
-  });
-  if (!put.ok) {
-    throw new Error(`Subida falló (${put.status}): ${await put.text()}`);
-  }
+  await putObject(key, body, "text/plain; charset=utf-8");
   console.log(`Subida OK → bucket "${r2.bucket}"`);
 
   try {
@@ -41,12 +36,7 @@ async function main() {
       );
     }
   } finally {
-    const del = await r2.client.fetch(url, { method: "DELETE" });
-    if (!del.ok) {
-      console.error(
-        `Aviso: no se pudo borrar el objeto de prueba (${del.status}).`,
-      );
-    }
+    await deleteObject(key);
   }
 
   console.log("R2 funcionando.");

@@ -83,10 +83,10 @@ test("público: se ve sin sesión y el cambio a privado se respeta", async ({
     visitorPage.getByRole("heading", { name: PROJECT }),
   ).toBeVisible();
 
-  // …y el perfil público lo lista.
+  // …y el perfil público lo lista (heading exacto: "Prueba Proyectos" no cuenta).
   await visitorPage.goto(`/@${USERNAME}`);
   await expect(
-    visitorPage.getByRole("heading", { name: "Proyectos" }),
+    visitorPage.getByRole("heading", { name: "Proyectos", exact: true }),
   ).toBeVisible();
   await expect(
     visitorPage.getByRole("link", { name: new RegExp(PROJECT) }),

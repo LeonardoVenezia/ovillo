@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { user } from "./auth-schema";
+import { image } from "./media-schema";
 import type { ProfileVisibility } from "./profile-schema";
 
 /**
@@ -20,8 +21,8 @@ import type { ProfileVisibility } from "./profile-schema";
  * y todos los detalles opcionales. El borrado es lógico (`deleted_at`) y el
  * slug es único por persona, porque la URL pública es `/@usuario/proyectos/x`.
  *
- * Las fotos, el diario y los contadores llegan en los próximos tramos de la
- * fase: por eso todavía no tienen tablas propias.
+ * Las fotos y el diario viven en `media-schema.ts`; los contadores llegan en
+ * el próximo tramo de la fase.
  */
 
 export const PROJECT_STATUSES = [
@@ -70,6 +71,10 @@ export const project = pgTable(
       .$type<ProfileVisibility>()
       .notNull()
       .default("publico"),
+    /** Portada elegida de la galería (spec §6); `null` si todavía no hay. */
+    coverImageId: text("cover_image_id").references(() => image.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

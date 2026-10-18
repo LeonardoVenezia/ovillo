@@ -54,3 +54,63 @@ export function objectUrl(key: string): string {
   const r2 = getR2();
   return `${r2.endpoint}/${r2.bucket}/${key}`;
 }
+
+/**
+ * Firma con aws4fetch y hace el fetch acá (no con `client.fetch`).
+ *
+ * `client.fetch` arma un `Request` y lo entrega al `fetch` de Next, que al
+ * recibir un `Request` lo reconstruye con el cuerpo como stream: sin largos
+ * conocidos, R2 responde 411 (Length Required). Pidiendo la firma y pasando
+ * los bytes como init, el `Content-Length` viaja bien.
+ */
+async function signedFetch(
+  key: string,
+  init: { method: string; body?: Uint8Array; contentType?: string },
+): Promise<Response> {
+  const r2 = getR2();
+  const signed = await r2.client.sign(objectUrl(key), {
+    method: init.method,
+    body: init.body as unknown as BodyInit,
+    ...(init.contentType
+      ? { headers: { "content-type": init.contentType } }
+      : {}),
+  });
+  return fetch(signed.url, {
+    method: signed.method,
+    headers: signed.headers,
+    body: init.body as unknown as BodyInit,
+  });
+}
+
+/** Sube (o reemplaza) un objeto en el bucket. */
+export async function putObject(
+  key: string,
+  body: Uint8Array,
+  contentType: string,
+): Promise<void> {
+  const response = await signedFetch(key, {
+    method: "PUT",
+    body,
+    contentType,
+  });
+  if (!response.ok) {
+    throw new Error(`R2: no se pudo subir "${key}" (${response.status}).`);
+  }
+}
+
+/** Borra un objeto; un 404 se considera éxito (ya no estaba). */
+export async function deleteObject(key: string): Promise<void> {
+  const response = await signedFetch(key, { method: "DELETE" });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`R2: no se pudo borrar "${key}" (${response.status}).`);
+  }
+}
+
+/**
+ * URL pública base, o `null` si todavía no está configurada (así la app
+ * degrade con gracia en vez de romper: sin URL, las fotos no se muestran).
+ */
+export function getPublicUrl(): string | null {
+  const value = getEnv().R2_PUBLIC_URL;
+  return value ? value.replace(/\/+$/, "") : null;
+}

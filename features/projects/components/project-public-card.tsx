@@ -1,3 +1,6 @@
+/* eslint-disable @next/next/no-img-element -- las fotos ya llegan comprimidas;
+   next/image no aportaría y sumaría cuota. */
+
 import { Lock } from "lucide-react";
 import Link from "next/link";
 
@@ -8,8 +11,10 @@ import { isCraft } from "@/features/profile/constants";
 import { es } from "@/messages/es";
 
 import { formatProjectDate } from "../format";
+import type { DiaryEntryView, PhotoView } from "../media-view";
 import type { PublicProjectPage } from "../queries";
 import { ProgressBar } from "./progress-bar";
+import { ProjectMediaPublic } from "./project-media-public";
 import { ProjectStatusBadge } from "./project-status-badge";
 
 /**
@@ -20,9 +25,13 @@ import { ProjectStatusBadge } from "./project-status-badge";
 export function ProjectPublicCard({
   data,
   isOwner,
+  photos,
+  entries,
 }: {
   data: PublicProjectPage;
   isOwner: boolean;
+  photos: PhotoView[];
+  entries: DiaryEntryView[];
 }) {
   const { project, owner } = data;
 
@@ -40,6 +49,10 @@ export function ProjectPublicCard({
     project.craft && isCraft(project.craft)
       ? es.profile.craftLabels[project.craft]
       : null;
+
+  const cover =
+    photos.find((photo) => photo.imageId === project.coverImageId) ??
+    photos.find((photo) => photo.fullUrl !== null);
 
   const details = [
     craftLabel ? { label: es.projects.craftLabel, value: craftLabel } : null,
@@ -102,6 +115,14 @@ export function ProjectPublicCard({
         ) : null}
       </div>
 
+      {cover?.fullUrl ? (
+        <img
+          src={cover.fullUrl}
+          alt={cover.alt || project.name}
+          className="border-border aspect-[4/3] w-full rounded-2xl border object-cover"
+        />
+      ) : null}
+
       {project.progress !== null ? (
         <div className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between">
@@ -148,6 +169,8 @@ export function ProjectPublicCard({
           </p>
         </div>
       ) : null}
+
+      <ProjectMediaPublic photos={photos} entries={entries} />
 
       {isOwner ? (
         <div>

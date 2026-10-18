@@ -9,9 +9,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isCraft } from "@/features/profile/constants";
 import { DeleteProjectButton } from "@/features/projects/components/delete-project-button";
 import { ProgressBar } from "@/features/projects/components/progress-bar";
+import { ProjectDiary } from "@/features/projects/components/project-diary";
+import { ProjectGallery } from "@/features/projects/components/project-gallery";
 import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge";
 import { ProjectStatusPicker } from "@/features/projects/components/project-status-picker";
 import { formatProjectDate } from "@/features/projects/format";
+import {
+  listProjectEntries,
+  listProjectPhotos,
+} from "@/features/projects/media-queries";
+import { toEntryViews, toPhotoViews } from "@/features/projects/media-view";
 import { getProjectBySlug } from "@/features/projects/queries";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
@@ -42,6 +49,11 @@ async function ProjectDetail({ slug }: { slug: string }) {
   if (!project) {
     notFound();
   }
+
+  const [photos, entries] = await Promise.all([
+    listProjectPhotos(project.id),
+    listProjectEntries(project.id),
+  ]);
 
   const craftLabel =
     project.craft && isCraft(project.craft)
@@ -179,6 +191,14 @@ async function ProjectDetail({ slug }: { slug: string }) {
           </p>
         </div>
       ) : null}
+
+      <ProjectGallery
+        projectId={project.id}
+        photos={toPhotoViews(photos)}
+        coverImageId={project.coverImageId}
+      />
+
+      <ProjectDiary projectId={project.id} entries={toEntryViews(entries)} />
 
       <div className="border-border border-t pt-4">
         <DeleteProjectButton projectId={project.id} />
