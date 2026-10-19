@@ -17,6 +17,7 @@ import {
   languageLabel,
 } from "@/features/pattern/format";
 import { PatternCommunityProjects } from "@/features/projects/components/pattern-community";
+import { PatternUserActions } from "@/features/pattern/components/pattern-user-actions";
 import { getPatternBySlug } from "@/features/pattern/queries";
 import { getOptionalUser } from "@/lib/session";
 import { es } from "@/messages/es";
@@ -118,6 +119,9 @@ export default async function PatternPage({ params }: Props) {
             {es.patterns.startCta}
           </Link>
         </Button>
+        <Suspense fallback={null}>
+          <PatternUserActions patternId={data.id} />
+        </Suspense>
       </div>
 
       {data.status === "sin-revisar" ? (

@@ -11,7 +11,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
 - [x] Fase 4 — Catálogo (lanas y patrones) — cerrada (tramos 1–3: lanas, patrones, galerías y pulido de búsqueda)
-- [ ] Fase 5 — Mi tejido (parte 2) — en curso (tramos 1–2 hechos: inventario de lana y lanas/herramientas en los proyectos)
+- [ ] Fase 5 — Mi tejido (parte 2) — en curso (tramos 1–3 hechos: inventario de lana, lanas/herramientas en los proyectos y Quiero tejer + Guardados)
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
 - [ ] Fase 8 — Moderación, pulido y lanzamiento
@@ -174,7 +174,7 @@ Cierre de la fase: commit `e53d4dc` (+ docs del estado), CI en verde y deploy ve
 
 ## Fase 5 — Mi tejido (parte 2) (2026-10-18 → )
 
-Tramos: 1) **inventario de lana** (hecho) · 2) **lanas en los proyectos + "con mi lana"** (hecho) · 3) **Quiero tejer + Guardados y colecciones** · 4) **meta anual**.
+Tramos: 1) **inventario de lana** (hecho) · 2) **lanas en los proyectos + "con mi lana"** (hecho) · 3) **Quiero tejer + Guardados y colecciones** (hecho) · 4) **meta anual**.
 
 Hecho (inventario de lana, tramo 1):
 - **Modelo** (spec §5.7/§6, migración `0009`): `stash_item` (lana del catálogo o carga libre, color, lote, ovillos/gramos/metros, ubicación, notas, visibilidad privada y foto opcional) y `project_yarn` (lana usada por proyecto: del inventario o del catálogo, en ovillos y/o gramos). La **cantidad disponible = total − asignada** se calcula al leer (proyectos activos), nunca se guarda ni se muta: por eso frogear o editar un proyecto devuelve la cantidad solo (criterio de aceptación de §5.7; la interfaz de asignación llega en el tramo 2). Ver D-045.
@@ -194,6 +194,14 @@ Hecho (lanas y herramientas en los proyectos + "Con mi lana", tramo 2):
 - **Calidad**: **168 tests** unitarios (8 nuevos: stock por grosor, proporción de metros y lanas omitidas) + **70 e2e** en verde — 7 nuevos (inventario con lana del catálogo y carga libre sin metros, herramienta, lana y herramienta asignadas al proyecto con el descuento verificado, galería en la ficha de la lana sin sesión, "Con mi lana" que cruza / se vacía / avisa el exceso / vuelve al quitar, y el chip sin sesión que lleva al ingreso y regresa al filtro). Build verde.
 - **Producción**: commit `f3498da`, CI en verde y deploy verificado con la cuenta demo — "Lanas del proyecto" y "Agujas y ganchos" en el sweater de María (3 de sus 4 ovillos mostaza, disponible 1) y en el gorro (lana de la abuela, disponible 2 de 3, y gancho 4 mm); los descuentos en `/mi-tejido/lanas` ("Disponible: 1 de 4 ovillos" mostaza, "2 de 3" la de la abuela, "1 de 1" Fil Piuma que la bufanda del catálogo dejó libre); "Con mi lana" devolviendo la Bufanda fácil en Fil Piuma; y "Hechos por la comunidad" en las fichas de Fil Piuma (la bufanda de María) y Olaf (la manta de Candela).
 
+Hecho (Quiero tejer + Guardados y colecciones, tramo 3):
+- **Quiero tejer** (spec §5.8, ruta `/mi-tejido/quiero-tejer`): la ficha de patrón suma el interruptor "Quiero tejer" / "En la cola" (idempotente: una entrada por persona y patrón, tope 100). La página muestra la cola ordenable — **arrastrar en pantalla grande y flechas siempre** (sin dependencias nuevas) — con la lana planeada (anotación, no reserva: no descuenta stock), la fecha objetivo ("Para el 01/12/2026") y notas; cada fila enlaza al patrón, abre "Lana y fecha" en línea y ofrece "Empezar", que abre el formulario de proyecto con el patrón elegido sin borrar la entrada. El hub suma la tarjeta "Quiero tejer" con el conteo. Ver D-051.
+- **Guardados y colecciones** (spec §5.8, ruta `/mi-tejido/guardados`): botón "Guardar" en la ficha de patrón (junto a Quiero tejer), en la de lana y en la página pública del proyecto; guarda patrones, proyectos y lanas (polimórfico, idempotente, topes 500/50). La página lista todo con su etiqueta y subtítulo (diseñador, estado o marca), filtra por colección o "Sin colección", mueve con un selector por fila y permite crear, editar y borrar colecciones (borrar no borra los guardados: quedan en "Sin colección"). Las colecciones públicas alimentan la sección "Guardados" del perfil público, con los destinos que sigan siendo públicos y solo si el perfil es público. Ver D-052.
+- **Sin sesión**: los dos botones llevan a ingresar con la vuelta (`?volver=`) a la misma página, como el chip "Con mi lana".
+- **Datos demo**: María queda con 3 en la cola (una con lana planeada y fecha, una con notas) y dos colecciones —"Para el invierno" (pública: patrón + lana + su sweater) e "Ideas para regalar" (privada)—; Candela y Lupita aportan cola y una colección pública cada una; Sol, cola sin colecciones (su perfil es privado). `/@mariaruiz` muestra "Guardados" en producción sin pasos manuales.
+- **Calidad**: **176 tests** unitarios (8 nuevos: el índice fraccional de la cola, con renumerado cuando el hueco se agota) + **81 e2e** en verde — 11 nuevos (sumar desde la ficha y verlo en el hub, orden con flechas, lana planeada + fecha + notas, "Empezar" prellenado, quitar; guardar patrón/lana/proyecto, colección pública visible en el perfil, colección privada oculta y borrado sin perder guardados, quitar un guardado). Build verde.
+- **Producción**: commit `PENDIENTE`, CI en verde y deploy verificado — por completar al cierre.
+
 Pendientes de la fase (no frenan; siguen):
-- [ ] Tramo 3: **Quiero tejer** y **Guardados y colecciones** (spec §5.6/§5.8).
 - [ ] Tramo 4: **meta anual** (spec §5.4).
+- [ ] Diferidos del tramo 3 (Fase 8 / futuros): valoraciones de patrones, subida de PDF propio y limpieza de guardados huérfanos (el filtrado al leer ya está; el índice `(target_type, target_id)` queda para "cuántas veces se guardó").

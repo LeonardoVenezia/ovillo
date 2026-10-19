@@ -25,6 +25,8 @@ import { image, projectEntry, projectPhoto } from "./media-schema";
 import { profile, type ProfileLink } from "./profile-schema";
 import { pattern } from "./pattern-schema";
 import { project, type ProjectStatus } from "./project-schema";
+import { queueItem } from "./queue-schema";
+import { collection, savedItem, type SavedType } from "./saved-schema";
 import { projectYarn, stashItem, type ColorFamily } from "./stash-schema";
 import { yarn, yarnBrand, type YarnWeight } from "./yarn-schema";
 
@@ -128,7 +130,35 @@ type UserSpec = {
   tools?: ToolSpec[];
   /** Lanas del inventario (spec §5.7) de la cuenta. */
   stash?: StashSpec[];
+  /** "Quiero tejer" (spec §5.8): la cola, en orden. */
+  queue?: QueueSpec[];
+  /** Guardados y colecciones (spec §5.8). */
+  collections?: CollectionSpec[];
   projects: ProjectSpec[];
+};
+
+type QueueSpec = {
+  /** `slug` del patrón de la biblioteca. */
+  patternSlug: string;
+  /** Índice dentro de `stash` de la misma cuenta: lana planeada. */
+  stash?: number;
+  /** Días **desde hoy** para la fecha objetivo (opcional). */
+  targetDaysFromNow?: number;
+  notes?: string;
+};
+
+type CollectionSpec = {
+  name: string;
+  visibility: "publico" | "privado";
+  items: CollectionItemSpec[];
+};
+
+type CollectionItemSpec = {
+  /** Uno solo de los tres: `slug` del patrón, del proyecto propio o lana. */
+  patternSlug?: string;
+  projectSlug?: string;
+  /** `marca/slug` del catálogo de lanas. */
+  yarnSlug?: string;
 };
 
 type ToolSpec = {
@@ -263,6 +293,44 @@ const DEMO_USERS: UserSpec[] = [
         skeins: 3,
         location: "Ropero",
         notes: "La guardo para un gorro de invierno.",
+      },
+    ],
+    queue: [
+      {
+        patternSlug: "gorro-beanie-oso",
+        stash: 1,
+        targetDaysFromNow: 45,
+        notes: "Para el cumple de mi sobrino.",
+      },
+      {
+        patternSlug: "chaleco-granny-squares-team-invierno",
+        stash: 0,
+        notes: "Quiero probar los granny squares.",
+      },
+      {
+        patternSlug: "oso-tono",
+        stash: 3,
+      },
+    ],
+    collections: [
+      {
+        name: "Para el invierno",
+        visibility: "publico",
+        items: [
+          { patternSlug: "bufanda-facil-en-fil-piuma" },
+          { yarnSlug: "katia/fil-piuma" },
+          { projectSlug: "sweater-otono" },
+        ],
+      },
+      {
+        name: "Ideas para regalar",
+        visibility: "privado",
+        items: [
+          { patternSlug: "oso-tono" },
+          { patternSlug: "gorro-beanie-oso" },
+          { patternSlug: "unicornio-candy" },
+          { yarnSlug: "modista/diana" },
+        ],
       },
     ],
     projects: [
@@ -477,6 +545,28 @@ const DEMO_USERS: UserSpec[] = [
         skeins: 2,
       },
     ],
+    queue: [
+      {
+        patternSlug: "estrella-a-crochet",
+        stash: 2,
+        notes: "Para colgar en la pieza de mi sobrina.",
+      },
+      {
+        patternSlug: "kokeshi",
+        targetDaysFromNow: 120,
+      },
+    ],
+    collections: [
+      {
+        name: "Crochet para regalar",
+        visibility: "publico",
+        items: [
+          { patternSlug: "kokeshi" },
+          { patternSlug: "estrella-a-crochet" },
+          { yarnSlug: "revesderecho/cotton" },
+        ],
+      },
+    ],
     projects: [
       {
         slug: "manta-granny",
@@ -645,6 +735,25 @@ const DEMO_USERS: UserSpec[] = [
         notes: "Para amigurumis chicos.",
       },
     ],
+    queue: [
+      {
+        patternSlug: "pechera-dickey-liv",
+        stash: 0,
+        targetDaysFromNow: 30,
+        notes: "Para estrenar cuando empiece el frío.",
+      },
+    ],
+    collections: [
+      {
+        name: "Lanas que me enamoraron",
+        visibility: "publico",
+        items: [
+          { yarnSlug: "katia/cotton-merino" },
+          { yarnSlug: "katia/merino-seta" },
+          { patternSlug: "chaleco-perla-y-silky-mohair" },
+        ],
+      },
+    ],
     projects: [
       {
         slug: "chal-encaje",
@@ -806,6 +915,13 @@ const DEMO_USERS: UserSpec[] = [
         skeins: 2,
         location: "Placard de arriba",
         notes: "Para el bolso que quiero fieltrar.",
+      },
+    ],
+    queue: [
+      {
+        patternSlug: "malu-hat",
+        stash: 0,
+        notes: "Para la feria de invierno del barrio.",
       },
     ],
     projects: [
@@ -1186,6 +1302,8 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   let stashCount = 0;
   let yarnLinkCount = 0;
   let toolLinkCount = 0;
+  let queueCount = 0;
+  let savedCount = 0;
 
   try {
     // Los vínculos lana↔proyecto y herramienta↔proyecto (spec §5.3) van al
@@ -1440,13 +1558,97 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
         });
       }
     }
+
+    // "Quiero tejer" y guardados (spec §5.8): van al final, cuando ya existen
+    // los ids de patrones, proyectos y lanas de la cuenta.
+    for (const [index, queueSpec] of (spec.queue ?? []).entries()) {
+      const patternId = patternIds.get(queueSpec.patternSlug);
+      if (!patternId) {
+        console.warn(
+          `  Aviso: no existe el patrón "${queueSpec.patternSlug}" para la cola de @${spec.username} (¿corriste pnpm db:seed-patterns?).`,
+        );
+        continue;
+      }
+
+      let plannedStashItemId: string | null = null;
+      if (queueSpec.stash !== undefined) {
+        plannedStashItemId = stashIds[queueSpec.stash] ?? null;
+        if (!plannedStashItemId) {
+          console.warn(
+            `  Aviso: falta la lana #${queueSpec.stash} para la cola de @${spec.username}.`,
+          );
+        }
+      }
+
+      queueCount++;
+      await db.insert(queueItem).values({
+        id: createId(),
+        userId,
+        patternId,
+        position: index + 1,
+        plannedStashItemId,
+        targetDate:
+          queueSpec.targetDaysFromNow === undefined
+            ? null
+            : dateString(-queueSpec.targetDaysFromNow),
+        notes: queueSpec.notes ?? null,
+        createdAt,
+        updatedAt: createdAt,
+      });
+    }
+
+    for (const collectionSpec of spec.collections ?? []) {
+      const collectionId = createId();
+      await db.insert(collection).values({
+        id: collectionId,
+        userId,
+        name: collectionSpec.name,
+        visibility: collectionSpec.visibility,
+        createdAt,
+        updatedAt: createdAt,
+      });
+
+      for (const item of collectionSpec.items) {
+        let targetType: SavedType | null = null;
+        let targetId: string | null = null;
+
+        if (item.patternSlug) {
+          targetType = "patron";
+          targetId = patternIds.get(item.patternSlug) ?? null;
+        } else if (item.projectSlug) {
+          targetType = "proyecto";
+          targetId = projectIds.get(item.projectSlug) ?? null;
+        } else if (item.yarnSlug) {
+          targetType = "lana";
+          targetId = yarnsByPath.get(item.yarnSlug)?.id ?? null;
+        }
+
+        if (!targetType || !targetId) {
+          console.warn(
+            `  Aviso: no se pudo guardar un destino de la colección "${collectionSpec.name}" de @${spec.username}.`,
+          );
+          continue;
+        }
+
+        savedCount++;
+        await db.insert(savedItem).values({
+          id: createId(),
+          userId,
+          collectionId,
+          targetType,
+          targetId,
+          createdAt,
+          updatedAt: createdAt,
+        });
+      }
+    }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
 
   const projectCount = spec.projects.length;
   console.log(
-    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s), ${stashCount} lana(s), ${yarnLinkCount} lana(s) asignada(s), ${toolLinkCount} vínculo(s) de herramienta(s)`,
+    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s), ${stashCount} lana(s), ${yarnLinkCount} lana(s) asignada(s), ${toolLinkCount} vínculo(s) de herramienta(s), ${queueCount} en la cola, ${savedCount} guardado(s)`,
   );
 }
 
@@ -1482,6 +1684,9 @@ async function main(): Promise<void> {
   );
   console.log(
     "Con demo.mariaruiz@ovillo.test: /mi-tejido/lanas tiene 5 lanas (2 con foto) y /mi-tejido/herramientas, 7 herramientas.",
+  );
+  console.log(
+    "  Quiero tejer suma 3 patrones y Guardados, 2 colecciones; /@mariaruiz muestra la colección pública «Para el invierno».",
   );
 }
 

@@ -9,6 +9,8 @@ import {
   type PublicProfile,
 } from "@/features/profile/queries";
 import { ProfileProjects } from "@/features/projects/components/profile-projects";
+import { ProfileCollections } from "@/features/saved/components/profile-collections";
+import { listPublicCollections } from "@/features/saved/queries";
 import { getOptionalUser } from "@/lib/session";
 
 /**
@@ -69,6 +71,9 @@ export default async function UserProfilePage({ params }: Props) {
       <Suspense fallback={null}>
         <ProfileProjectsSection data={data} />
       </Suspense>
+      <Suspense fallback={null}>
+        <ProfileSavedSection data={data} />
+      </Suspense>
     </section>
   );
 }
@@ -93,4 +98,26 @@ async function ProfileProjectsSection({ data }: { data: PublicProfile }) {
   return (
     <ProfileProjects userId={data.user.id} username={data.user.username} />
   );
+}
+
+/**
+ * "Guardados públicos": las colecciones públicas de la persona (spec §5.2 y
+ * §5.8). Misma regla que los proyectos: en perfiles privados solo las ve su
+ * dueña. Los destinos que dejaron de ser públicos quedan afuera.
+ */
+async function ProfileSavedSection({ data }: { data: PublicProfile }) {
+  const viewer = await getOptionalUser();
+  const isOwner = viewer?.id === data.user.id;
+  const detailsVisible =
+    !data.profile || data.profile.defaultVisibility !== "privado" || isOwner;
+  if (!detailsVisible) {
+    return null;
+  }
+
+  const collections = await listPublicCollections(data.user.id);
+  if (collections.length === 0) {
+    return null;
+  }
+
+  return <ProfileCollections collections={collections} />;
 }

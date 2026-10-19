@@ -19,6 +19,8 @@ import {
   getProjectByUsername,
   type PublicProjectPage,
 } from "@/features/projects/queries";
+import { SaveToggle } from "@/features/saved/components/save-toggle";
+import { getSavedItem } from "@/features/saved/queries";
 import { getOptionalUser } from "@/lib/session";
 import { es } from "@/messages/es";
 import { getPublicUrl } from "@/storage";
@@ -136,12 +138,26 @@ async function ViewerAwareProject({
   entries: DiaryEntryView[];
 }) {
   const viewer = await getOptionalUser();
+  const saved = viewer
+    ? await getSavedItem(viewer.id, "proyecto", data.project.id)
+    : null;
+
   return (
-    <ProjectPublicCard
-      data={data}
-      isOwner={viewer?.id === data.project.userId}
-      photos={photos}
-      entries={entries}
-    />
+    <>
+      <ProjectPublicCard
+        data={data}
+        isOwner={viewer?.id === data.project.userId}
+        photos={photos}
+        entries={entries}
+      />
+      <div className="flex flex-wrap gap-3">
+        <SaveToggle
+          targetType="proyecto"
+          targetId={data.project.id}
+          initialSavedItemId={saved?.id ?? null}
+          signedIn={Boolean(viewer)}
+        />
+      </div>
+    </>
   );
 }

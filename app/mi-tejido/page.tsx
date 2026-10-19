@@ -19,6 +19,8 @@ import { VerificationNotice } from "@/features/auth/components/verification-noti
 import { getProfileByUserId } from "@/features/profile/queries";
 import { ProjectCard } from "@/features/projects/components/project-card";
 import { listProjects, type Project } from "@/features/projects/queries";
+import { countQueue } from "@/features/queue/queries";
+import { countSaved } from "@/features/saved/queries";
 import { countStash } from "@/features/stash/queries";
 import { countTools } from "@/features/tools/queries";
 import { requireUser } from "@/lib/session";
@@ -43,12 +45,15 @@ export default function MyWorkPage() {
 
 async function MyWorkContent() {
   const user = await requireUser();
-  const [profile, projects, toolsCount, stash] = await Promise.all([
-    getProfileByUserId(user.id),
-    listProjects(user.id),
-    countTools(user.id),
-    countStash(user.id),
-  ]);
+  const [profile, projects, toolsCount, stash, queueCount, savedCount] =
+    await Promise.all([
+      getProfileByUserId(user.id),
+      listProjects(user.id),
+      countTools(user.id),
+      countStash(user.id),
+      countQueue(user.id),
+      countSaved(user.id),
+    ]);
   const profileStarted = (profile?.crafts.length ?? 0) > 0;
 
   return (
@@ -147,6 +152,30 @@ async function MyWorkContent() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">{es.queue.hubTitle}</CardTitle>
+          <CardDescription>{queueSummary(queueCount)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <Link href="/mi-tejido/quiero-tejer">{es.queue.hubCta}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{es.saved.hubTitle}</CardTitle>
+          <CardDescription>{savedSummary(savedCount)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <Link href="/mi-tejido/guardados">{es.saved.hubCta}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">{es.stash.hubTitle}</CardTitle>
           <CardDescription>{stashSummary(stash)}</CardDescription>
         </CardHeader>
@@ -213,6 +242,28 @@ function toolsSummary(count: number): string {
     return es.tools.hubCountOne;
   }
   return es.tools.hubCount.replace("{count}", String(count));
+}
+
+/** Resumen de la cola para el hub. */
+function queueSummary(count: number): string {
+  if (count === 0) {
+    return es.queue.hubEmpty;
+  }
+  if (count === 1) {
+    return es.queue.hubCountOne;
+  }
+  return es.queue.hubCount.replace("{count}", String(count));
+}
+
+/** Resumen de guardados para el hub. */
+function savedSummary(count: number): string {
+  if (count === 0) {
+    return es.saved.hubEmpty;
+  }
+  if (count === 1) {
+    return es.saved.hubCountOne;
+  }
+  return es.saved.hubCount.replace("{count}", String(count));
 }
 
 /** "Tenés 8 lanas guardadas, 23 ovillos en total": resumen para el hub. */

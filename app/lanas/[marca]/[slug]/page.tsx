@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { countryName } from "@/features/profile/countries";
 import { YarnCommunityProjects } from "@/features/projects/components/yarn-community";
+import { SavedButton } from "@/features/saved/components/saved-button";
 import {
   formatComposition,
   formatNeedles,
@@ -146,6 +147,12 @@ export default async function YarnPage({ params }: Props) {
           </div>
         ) : null}
       </dl>
+
+      <div className="flex flex-wrap gap-3">
+        <Suspense fallback={null}>
+          <SavedButton targetType="lana" targetId={data.id} />
+        </Suspense>
+      </div>
 
       <Suspense fallback={<Skeleton className="h-48 w-full rounded-2xl" />}>
         <YarnCommunityProjects yarnId={data.id} />
