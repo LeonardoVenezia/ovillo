@@ -13,6 +13,12 @@ import { thumbKeyFor } from "../features/projects/media-view";
 import { suggestCatalogAmounts } from "../features/stash/schemas";
 import { deleteObject, putObject } from "../storage";
 import { account, user } from "./auth-schema";
+import {
+  group,
+  groupMember,
+  type GroupCategory,
+  type JoinPolicy,
+} from "./community-schema";
 import { rowCounter } from "./counter-schema";
 import { yearlyGoal } from "./goal-schema";
 import {
@@ -137,7 +143,29 @@ type UserSpec = {
   collections?: CollectionSpec[];
   /** Meta anual (spec §5.14): proyectos terminados que quiere lograr este año. */
   goalTargetProjects?: number;
+  /** Grupos de la comunidad (spec §5.9) a los que se suma. */
+  groups?: GroupMembershipSpec[];
   projects: ProjectSpec[];
+};
+
+type GroupMembershipSpec = {
+  /** `slug` del grupo oficial (`OFFICIAL_GROUPS`). */
+  slug: string;
+  /** Sin rol es integrante común; el de dueña/o lo pone la creación. */
+  role?: "moderador" | "miembro";
+  /** Sin estado queda activa; `pendiente` simula una solicitud de ingreso. */
+  status?: "activo" | "pendiente";
+};
+
+type GroupSpec = {
+  slug: string;
+  name: string;
+  description: string;
+  rules: string;
+  category: GroupCategory;
+  joinPolicy: JoinPolicy;
+  createdDaysAgo: number;
+  photo: PhotoSpec;
 };
 
 type QueueSpec = {
@@ -337,6 +365,12 @@ const DEMO_USERS: UserSpec[] = [
       },
     ],
     goalTargetProjects: 4,
+    groups: [
+      { slug: "dos-agujas", role: "moderador" },
+      { slug: "sugerencias-para-ovillo", role: "moderador" },
+      { slug: "ayuda-para-principiantes" },
+      { slug: "charla-general" },
+    ],
     projects: [
       {
         slug: "sweater-otono",
@@ -572,6 +606,11 @@ const DEMO_USERS: UserSpec[] = [
       },
     ],
     goalTargetProjects: 3,
+    groups: [
+      { slug: "amigurumis", role: "moderador" },
+      { slug: "crochet" },
+      { slug: "charla-general" },
+    ],
     projects: [
       {
         slug: "manta-granny",
@@ -760,6 +799,11 @@ const DEMO_USERS: UserSpec[] = [
       },
     ],
     goalTargetProjects: 2,
+    groups: [
+      { slug: "ayuda-para-principiantes" },
+      { slug: "amigurumis" },
+      { slug: "dos-agujas" },
+    ],
     projects: [
       {
         slug: "chal-encaje",
@@ -902,6 +946,10 @@ const DEMO_USERS: UserSpec[] = [
     links: [],
     defaultVisibility: "privado",
     createdDaysAgo: 60,
+    groups: [
+      { slug: "crochet" },
+      { slug: "sugerencias-para-ovillo", status: "pendiente" },
+    ],
     tools: [
       { kind: "rectas", sizeMm: 3.75, material: "aluminio" },
       { kind: "rectas", sizeMm: 4.5, material: "bambu" },
@@ -973,6 +1021,107 @@ const DEMO_USERS: UserSpec[] = [
     // Cuenta recién llegada: sin fila de perfil, para ver el estado vacío.
     withProfile: false,
     projects: [],
+  },
+  {
+    username: "ovillo",
+    name: "Equipo Ovillo",
+    country: "AR",
+    location: "",
+    bio: "La cuenta del equipo de Ovillo: organiza los grupos oficiales y responde las dudas de la comunidad.",
+    crafts: [],
+    skillLevel: "",
+    links: [],
+    createdDaysAgo: 220,
+    projects: [],
+  },
+];
+
+/**
+ * Grupos oficiales (spec §5.9). Los crea la cuenta del equipo y son el punto
+ * de partida de la comunidad: principiantes, técnicas, charla y sugerencias.
+ * «Sugerencias para Ovillo» es con aprobación para mostrar ese flujo (Sol
+ * queda con la solicitud pendiente en la siembra).
+ */
+const OFFICIAL_GROUPS: GroupSpec[] = [
+  {
+    slug: "ayuda-para-principiantes",
+    name: "Ayuda para principiantes",
+    description:
+      "Para quien recién arranca: dudas de puntos, cómo leer un patrón, qué lana elegir. Ninguna pregunta es tonta.",
+    rules:
+      "Trato amable y paciencia: todas empezamos alguna vez. Si sabés la respuesta, contala con tus palabras.",
+    category: "principiantes",
+    joinPolicy: "abierto",
+    createdDaysAgo: 210,
+    photo: { alt: "Degradé de lana color cielo", colors: CIELO, aspect: "h" },
+  },
+  {
+    slug: "dos-agujas",
+    name: "Dos agujas",
+    description:
+      "Punto, revés y todo lo que sigue: técnicas, tips de tensión, patrones y proyectos con agujas.",
+    rules:
+      "Compartí tus avances y tus dudas. Si mostrás una foto, contá qué lana y qué aguja usaste.",
+    category: "tecnica",
+    joinPolicy: "abierto",
+    createdDaysAgo: 210,
+    photo: {
+      alt: "Degradé de lana color mostaza",
+      colors: MOSTAZA,
+      aspect: "h",
+    },
+  },
+  {
+    slug: "crochet",
+    name: "Crochet",
+    description:
+      "Desde cadenas hasta grannys: ganchillo para todos los niveles, con tips y patrones de la comunidad.",
+    rules:
+      "Subí tus tejidos y preguntá lo que necesites. Mencioná el hilo y el número de gancho cuando consultes.",
+    category: "tecnica",
+    joinPolicy: "abierto",
+    createdDaysAgo: 209,
+    photo: {
+      alt: "Degradé de lana color terracota",
+      colors: TERRACOTA,
+      aspect: "h",
+    },
+  },
+  {
+    slug: "amigurumis",
+    name: "Amigurumis",
+    description:
+      "Muñequitos, animales y todo lo que se te ocurra en crochet: patrones, relleno, ojos y terminaciones.",
+    rules:
+      "Sin spoilers de regalos: si es sorpresa, avisá. Y si adaptás un patrón, contá tus cambios.",
+    category: "tecnica",
+    joinPolicy: "abierto",
+    createdDaysAgo: 208,
+    photo: { alt: "Degradé de lana color rosa", colors: ROSA, aspect: "h" },
+  },
+  {
+    slug: "charla-general",
+    name: "Charla general",
+    description:
+      "El rincón distendido: presentate, mostrá lo que estás tejiendo y charlá de todo un poco.",
+    rules:
+      "Respeto y buena onda. Nada de ventas ni spam: para eso está Sugerencias.",
+    category: "charla",
+    joinPolicy: "abierto",
+    createdDaysAgo: 207,
+    photo: { alt: "Degradé de lana verde agua", colors: TEAL, aspect: "h" },
+  },
+  {
+    slug: "sugerencias-para-ovillo",
+    name: "Sugerencias para Ovillo",
+    description:
+      "Ideas, mejoras y reportes de errores para que Ovillo sea cada día más fácil. Leen el equipo y la comunidad.",
+    rules:
+      "Una idea por hilo y contá qué te gustaría lograr. Antes de reportar un error, probá recargar la página.",
+    category: "charla",
+    joinPolicy: "aprobacion",
+    createdDaysAgo: 206,
+    photo: { alt: "Degradé de lana color lila", colors: LILA, aspect: "h" },
   },
 ];
 
@@ -1234,7 +1383,7 @@ async function uploadPhoto(
   return imageId;
 }
 
-async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
+async function seedUser(spec: UserSpec, passwordHash: string): Promise<string> {
   const db = getDb();
   const userId = createId();
   const createdAt = daysAgoDate(spec.createdDaysAgo);
@@ -1670,6 +1819,99 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   console.log(
     `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s), ${stashCount} lana(s), ${yarnLinkCount} lana(s) asignada(s), ${toolLinkCount} vínculo(s) de herramienta(s), ${queueCount} en la cola, ${savedCount} guardado(s), ${goalCount} meta(s)`,
   );
+
+  return userId;
+}
+
+/**
+ * Grupos oficiales y membresías demo (spec §5.9). Va después de las cuentas
+ * porque necesita los ids de todas: el equipo queda como dueño de cada grupo
+ * y las membresías reparten a la comunidad; Sol deja una solicitud pendiente
+ * para poder ver el flujo de aprobación.
+ */
+async function seedCommunity(users: Map<string, string>): Promise<void> {
+  const db = getDb();
+  const teamId = users.get("ovillo");
+  if (!teamId) {
+    return;
+  }
+
+  const tempDir = mkdtempSync(join(tmpdir(), "ovillo-groups-"));
+  let membershipCount = 0;
+
+  try {
+    const groupIds = new Map<string, string>();
+
+    for (const spec of OFFICIAL_GROUPS) {
+      const groupId = createId();
+      const createdAt = daysAgoDate(spec.createdDaysAgo);
+      const imageId = await uploadPhoto(
+        teamId,
+        `grupos/${groupId}`,
+        spec.photo,
+        tempDir,
+      );
+
+      await db.insert(group).values({
+        id: groupId,
+        slug: spec.slug,
+        name: spec.name,
+        description: spec.description,
+        rules: spec.rules,
+        category: spec.category,
+        joinPolicy: spec.joinPolicy,
+        imageId,
+        createdBy: teamId,
+        createdAt,
+        updatedAt: createdAt,
+      });
+      await db.insert(groupMember).values({
+        groupId,
+        userId: teamId,
+        role: "dueno",
+        status: "activo",
+        createdAt,
+        updatedAt: createdAt,
+      });
+
+      groupIds.set(spec.slug, groupId);
+    }
+
+    for (const spec of DEMO_USERS) {
+      const userId = users.get(spec.username);
+      if (!userId) {
+        continue;
+      }
+
+      // Cada quien se fue sumando con el tiempo, no el día que llegó.
+      const joinedAt = daysAgoDate(Math.max(5, spec.createdDaysAgo - 25));
+      for (const membership of spec.groups ?? []) {
+        const groupId = groupIds.get(membership.slug);
+        if (!groupId) {
+          console.warn(
+            `  Aviso: no existe el grupo "${membership.slug}" para ${spec.username}.`,
+          );
+          continue;
+        }
+
+        membershipCount += 1;
+        await db.insert(groupMember).values({
+          groupId,
+          userId,
+          role: membership.role ?? "miembro",
+          status: membership.status ?? "activo",
+          createdAt: joinedAt,
+          updatedAt: joinedAt,
+        });
+      }
+    }
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+
+  console.log(
+    `  ✓ comunidad — ${OFFICIAL_GROUPS.length} grupo(s) oficiales, ${membershipCount} membresía(s)`,
+  );
 }
 
 async function main(): Promise<void> {
@@ -1689,9 +1931,15 @@ async function main(): Promise<void> {
   const passwordHash = await hashPassword(DEMO_PASSWORD);
 
   console.log("Creando cuentas demo…");
+  const userIds = new Map<string, string>();
   for (const spec of DEMO_USERS) {
-    await seedUser(spec, passwordHash);
+    const userId = await seedUser(spec, passwordHash);
+    userIds.set(spec.username, userId);
   }
+
+  console.log("");
+  console.log("Sembrando la comunidad…");
+  await seedCommunity(userIds);
 
   console.log("");
   console.log(`Listo. Cuentas demo (contraseña compartida: ${DEMO_PASSWORD}):`);
@@ -1710,6 +1958,9 @@ async function main(): Promise<void> {
   );
   console.log(
     "  Mi año tejiendo: María (meta 4), Candela (3) y Lupita (2); /mi-tejido/meta y /@mariaruiz muestran progreso y resumen.",
+  );
+  console.log(
+    "  Comunidad: /comunidad lista los 6 grupos oficiales; en /grupos/sugerencias-para-ovillo espera la solicitud de Sol y @mariaruiz modera.",
   );
 }
 

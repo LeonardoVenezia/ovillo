@@ -9,11 +9,11 @@ import { getEnv } from "@/lib/env";
  * Middleware de rutas (spec §5.1: "rutas privadas protegidas en servidor").
  *
  * - Perfiles `/@usuario`, proyectos `/@usuario/proyectos/slug`, lanas
- *   (`/lanas/marca/slug`) y patrones (`/patrones/slug`): chequea que existan
- *   y, si no, reescribe a la ruta de 404. Hace falta acá porque el caparazón
- *   PPR de las rutas dinámicas se sirve con estado 200 y `notFound()` ya no
- *   puede cambiarlo (ver D-023 y D-031). Ante errores de base se deja pasar:
- *   la página decide.
+ *   (`/lanas/marca/slug`), patrones (`/patrones/slug`) y grupos
+ *   (`/grupos/slug`): chequea que existan y, si no, reescribe a la ruta de
+ *   404. Hace falta acá porque el caparazón PPR de las rutas dinámicas se
+ *   sirve con estado 200 y `notFound()` ya no puede cambiarlo (ver D-023 y
+ *   D-031). Ante errores de base se deja pasar: la página decide.
  * - Rutas privadas: redirección optimista si falta la cookie de sesión; la
  *   validación real (contra la base) la hace cada página con `requireUser()`.
  */
@@ -32,6 +32,12 @@ const PATTERN_PATH_PATTERN = /^\/patrones\/([^/]+)$/;
 
 /** Edición de un patrón propio (`/patrones/slug/editar`). */
 const PATTERN_EDIT_PATH_PATTERN = /^\/patrones\/([^/]+)\/editar$/;
+
+/** Ficha pública de un grupo (`/grupos/slug`; `/grupos/nuevo` no es ficha). */
+const GROUP_PATH_PATTERN = /^\/grupos\/([^/]+)$/;
+
+/** Edición de un grupo propio (`/grupos/slug/editar`). */
+const GROUP_EDIT_PATH_PATTERN = /^\/grupos\/([^/]+)\/editar$/;
 
 function decodeSegment(raw: string): string | null {
   try {
@@ -88,6 +94,17 @@ async function patternExists(slug: string): Promise<boolean> {
   }
 }
 
+async function groupExists(slug: string): Promise<boolean> {
+  try {
+    const sql = neon(getEnv().DATABASE_URL);
+    const rows: unknown[] =
+      await sql`select 1 from "group" where slug = ${slug} limit 1`;
+    return rows.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -131,6 +148,20 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const groupMatch = pathname.match(GROUP_PATH_PATTERN);
+  if (groupMatch) {
+    const groupSlug = decodeSegment(groupMatch[1])?.trim() ?? "";
+
+    // `/grupos/nuevo` es una ruta real, no una ficha: cae al chequeo de
+    // rutas privadas de abajo.
+    if (groupSlug !== "nuevo") {
+      if (groupSlug.length === 0 || !(await groupExists(groupSlug))) {
+        return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+      }
+      return NextResponse.next();
+    }
+  }
+
   if (pathname.startsWith("/@")) {
     const rest = pathname.slice(2);
 
@@ -153,11 +184,13 @@ export async function proxy(request: NextRequest) {
     pathname === "/bienvenida" ||
     pathname === "/explorar/lanas/proponer" ||
     pathname === "/explorar/patrones/proponer" ||
+    pathname === "/grupos/nuevo" ||
     pathname.startsWith("/mi-tejido") ||
     pathname.startsWith("/contador") ||
     pathname.startsWith("/configuracion") ||
     YARN_EDIT_PATH_PATTERN.test(pathname) ||
-    PATTERN_EDIT_PATH_PATTERN.test(pathname);
+    PATTERN_EDIT_PATH_PATTERN.test(pathname) ||
+    GROUP_EDIT_PATH_PATTERN.test(pathname);
   if (!isPrivate) {
     return NextResponse.next();
   }
@@ -190,5 +223,8 @@ export const config = {
     "/patrones/:slug",
     "/patrones/:slug/editar",
     "/explorar/patrones/proponer",
+    "/grupos/:slug",
+    "/grupos/:slug/editar",
+    "/grupos/nuevo",
   ],
 };

@@ -11,8 +11,8 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
 - [x] Fase 4 — Catálogo (lanas y patrones) — cerrada (tramos 1–3: lanas, patrones, galerías y pulido de búsqueda)
-- [ ] Fase 5 — Mi tejido (parte 2) — en curso (tramos 1–4 hechos: inventario de lana, lanas/herramientas en los proyectos, Quiero tejer + Guardados y Meta anual "Mi año tejiendo")
-- [ ] Fase 6 — Comunidad
+- [x] Fase 5 — Mi tejido (parte 2) — cerrada (tramos 1–4: inventario de lana, lanas/herramientas en los proyectos, Quiero tejer + Guardados y Meta anual "Mi año tejiendo")
+- [ ] Fase 6 — Comunidad — en curso (tramo 1 hecho: grupos y membresía)
 - [ ] Fase 7 — Social y notificaciones
 - [ ] Fase 8 — Moderación, pulido y lanzamiento
 
@@ -212,3 +212,18 @@ Hecho (Mi año tejiendo, tramo 4):
 
 Pendientes de la fase (no frenan; siguen):
 - [ ] Diferidos del tramo 3 (Fase 8 / futuros): valoraciones de patrones, subida de PDF propio y limpieza de guardados huérfanos (el filtrado al leer ya está; el índice `(target_type, target_id)` queda para "cuántas veces se guardó").
+
+## Fase 6 — Comunidad (2026-10-19 → )
+
+Tramos: 1) **grupos y membresía** (hecho) · 2) **hilos y respuestas** (tipos, solución, fotos, "Pedir ayuda" desde un proyecto) · 3) **KAL/CAL** (eventos dentro del grupo) · 4) **glosario** (términos con variantes por país, abreviaturas e inglés; edición para moderadores).
+
+Hecho (grupos y membresía, tramo 1):
+- **Modelo** (spec §5.9/§6, migración `0013`): `group` (slug único, nombre, descripción, reglas, categoría, portada opcional, `join_policy` `abierto` | `aprobacion` y dueña/o) y `group_member` (una fila por persona y grupo: rol `dueno` | `moderador` | `miembro` y estado `activo` | `pendiente`; una pendiente es una solicitud de ingreso). Ver D-054.
+- **Rutas**: `/comunidad` (hub: "Tus grupos" —con la solicitud pendiente marcada— y una muestra de los grupos con más gente), `/grupos` (directorio con búsqueda sin acentos y chips de categoría, con el estado de quien mira en cada tarjeta), `/grupos/[slug]` (ficha: portada, categoría, integrantes con roles, reglas, botón de unirse/salir/cancelar y, para moderación, las solicitudes con Aceptar/Rechazar), `/grupos/nuevo` y `/grupos/[slug]/editar`. El proxy da 404 real a los grupos inexistentes y manda a ingresar en las rutas privadas.
+- **Membresía**: en los grupos abiertos se entra al toque; con aprobación la solicitud queda pendiente hasta que un moderador acepta (y se puede cancelar). Quien creó el grupo edita y nombra moderadores (que también editan y aprueban); no puede salir de su propio grupo. Renombrar no rompe la URL: el slug se calcula una vez y no cambia. Sin cachés: se lee al momento bajo `<Suspense>` y las mutaciones se ven con `router.refresh()`.
+- **Datos demo**: la cuenta nueva **Equipo Ovillo** queda dueña de 6 grupos oficiales con portada (Ayuda para principiantes, Dos agujas, Crochet, Amigurumis, Charla general y Sugerencias para Ovillo —esta con aprobación—); María modera Dos agujas y Sugerencias, Candela modera Amigurumis, Lupita y Sol integran varios grupos y Sol deja una solicitud pendiente en Sugerencias para mostrar el flujo de aprobación.
+- **Calidad**: **201 tests** unitarios (11 nuevos: slug, permisos de moderación, orden de integrantes y validación del formulario de grupo) + **89 e2e** en verde — 5 nuevos (grupos oficiales sin sesión, búsqueda y 404 real; grupo abierto creado y unión de la segunda cuenta; grupo con aprobación con solicitud, aceptación y salida; y edición + nombramiento de moderadora). Build verde.
+
+Pendientes de la fase (no frenan; siguen):
+- [ ] Diferidos del tramo 1 (Fase 8 / futuros): borrado de grupos, expulsión de integrantes y baneo (`baneado`), transferencia de propiedad y subir la portada del grupo desde la interfaz (el destino `grupo` de `/api/fotos`).
+
