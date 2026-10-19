@@ -11,7 +11,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
 - [x] Fase 4 — Catálogo (lanas y patrones) — cerrada (tramos 1–3: lanas, patrones, galerías y pulido de búsqueda)
-- [ ] Fase 5 — Mi tejido (parte 2) — en curso (tramos 1–3 hechos: inventario de lana, lanas/herramientas en los proyectos y Quiero tejer + Guardados)
+- [ ] Fase 5 — Mi tejido (parte 2) — en curso (tramos 1–4 hechos: inventario de lana, lanas/herramientas en los proyectos, Quiero tejer + Guardados y Meta anual "Mi año tejiendo")
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
 - [ ] Fase 8 — Moderación, pulido y lanzamiento
@@ -174,7 +174,7 @@ Cierre de la fase: commit `e53d4dc` (+ docs del estado), CI en verde y deploy ve
 
 ## Fase 5 — Mi tejido (parte 2) (2026-10-18 → )
 
-Tramos: 1) **inventario de lana** (hecho) · 2) **lanas en los proyectos + "con mi lana"** (hecho) · 3) **Quiero tejer + Guardados y colecciones** (hecho) · 4) **meta anual**.
+Tramos: 1) **inventario de lana** (hecho) · 2) **lanas en los proyectos + "con mi lana"** (hecho) · 3) **Quiero tejer + Guardados y colecciones** (hecho) · 4) **meta anual "Mi año tejiendo"** (hecho).
 
 Hecho (inventario de lana, tramo 1):
 - **Modelo** (spec §5.7/§6, migración `0009`): `stash_item` (lana del catálogo o carga libre, color, lote, ovillos/gramos/metros, ubicación, notas, visibilidad privada y foto opcional) y `project_yarn` (lana usada por proyecto: del inventario o del catálogo, en ovillos y/o gramos). La **cantidad disponible = total − asignada** se calcula al leer (proyectos activos), nunca se guarda ni se muta: por eso frogear o editar un proyecto devuelve la cantidad solo (criterio de aceptación de §5.7; la interfaz de asignación llega en el tramo 2). Ver D-045.
@@ -202,6 +202,12 @@ Hecho (Quiero tejer + Guardados y colecciones, tramo 3):
 - **Calidad**: **176 tests** unitarios (8 nuevos: el índice fraccional de la cola, con renumerado cuando el hueco se agota) + **81 e2e** en verde — 11 nuevos (sumar desde la ficha y verlo en el hub, orden con flechas, lana planeada + fecha + notas, "Empezar" prellenado, quitar; guardar patrón/lana/proyecto, colección pública visible en el perfil, colección privada oculta y borrado sin perder guardados, quitar un guardado). Build verde.
 - **Producción**: commit `8773b2f`, CI en verde y deploy verificado con la cuenta demo — hub con "Tenés 3 patrones en la cola" y "Tenés 7 cosas guardadas"; `/mi-tejido/quiero-tejer` con los tres patrones (el Beanie Oso con la merino mostaza planeada, su nota y "Para el 03/12/2026"; el granny y el Oso Toño con sus lanas y notas); `/mi-tejido/guardados` con las dos colecciones ("Para el invierno", pública, 3; "Ideas para regalar", privada, 4) y los 7 guardados; "Quiero tejer" y "Guardar" en la ficha de Malu Hat, "Guardar" en la de Fil Piuma y en el sweater público de María; `/@mariaruiz` con la sección "Guardados" y la colección pública; y las rutas privadas redirigiendo con la vuelta (`?volver=`).
 
+Hecho (Mi año tejiendo, tramo 4):
+- **Meta anual** (spec §5.14, ruta `/mi-tejido/meta`): tarjeta "Meta del año" para anotar, cambiar o quitar la meta de proyectos terminados (1 a 200; `yearly_goal` con `unique (user_id, year)`, migración `0012` aplicada a la base compartida), barra de progreso ("Vas 1 de 4 proyectos terminados en 2026"; "¡Meta cumplida…!" al llegar) y "Resumen 2026" con proyectos terminados, metros tejidos y lana más usada. El progreso no se guarda: se calcula al leer los proyectos con `finished_at` del año (D-053). Ver D-053.
+- **El resumen se estima solo con lo que se sabe** (funciones puras en `features/goal/summary.ts`): metros = ovillos × metros-por-ovillo (inventario o catálogo) y, si el uso está en gramos, gramos × (metros ÷ gramos) cuando la etiqueta lo permite; las lanas sin datos no se muestran en vez de inventar números. "Lana más usada" por metros, desempata gramos y nombre.
+- **Progreso en el perfil público** (spec §5.14): `/@usuario` suma "Mi año tejiendo" con el progreso y el resumen si hay meta o proyectos terminados este año, con la misma regla de visibilidad que el resto de los detalles (perfil privado → solo su dueña). El hub de Mi tejido suma la tarjeta "Mi año tejiendo" que resume o invita.
+- **Datos demo**: María (meta 4), Candela (3) y Lupita (2) quedan con meta y un proyecto terminado este año, así el perfil y la página muestran progreso y resumen reales (en María, Fil Piuma como lana más usada: 1 × 400 m); Sol y Tomi quedan sin meta (vacíos honestos).
+- **Calidad**: **190 tests** unitarios (14 nuevos: estimación de metros por ovillos/gramos, filtrado por año, lana más usada con desempates y formato de miles) + **84 e2e** en verde — 3 nuevos (registro, resumen con lana asignada y proyecto terminado que suma metros y lana más usada, y meta que se anota, se cambia, se cumple y se quita con el hub y el perfil al día). Build verde.
+
 Pendientes de la fase (no frenan; siguen):
-- [ ] Tramo 4: **meta anual** (spec §5.4).
 - [ ] Diferidos del tramo 3 (Fase 8 / futuros): valoraciones de patrones, subida de PDF propio y limpieza de guardados huérfanos (el filtrado al leer ya está; el índice `(target_type, target_id)` queda para "cuántas veces se guardó").

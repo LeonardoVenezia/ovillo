@@ -16,6 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResendVerificationButton } from "@/features/auth/components/resend-verification-button";
 import { VerificationNotice } from "@/features/auth/components/verification-notice";
+import { getYearOverview, type YearOverview } from "@/features/goal/queries";
 import { getProfileByUserId } from "@/features/profile/queries";
 import { ProjectCard } from "@/features/projects/components/project-card";
 import { listProjects, type Project } from "@/features/projects/queries";
@@ -23,6 +24,7 @@ import { countQueue } from "@/features/queue/queries";
 import { countSaved } from "@/features/saved/queries";
 import { countStash } from "@/features/stash/queries";
 import { countTools } from "@/features/tools/queries";
+import { getCurrentYear } from "@/lib/current-year";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
@@ -45,15 +47,23 @@ export default function MyWorkPage() {
 
 async function MyWorkContent() {
   const user = await requireUser();
-  const [profile, projects, toolsCount, stash, queueCount, savedCount] =
-    await Promise.all([
-      getProfileByUserId(user.id),
-      listProjects(user.id),
-      countTools(user.id),
-      countStash(user.id),
-      countQueue(user.id),
-      countSaved(user.id),
-    ]);
+  const [
+    profile,
+    projects,
+    toolsCount,
+    stash,
+    queueCount,
+    savedCount,
+    yearOverview,
+  ] = await Promise.all([
+    getProfileByUserId(user.id),
+    listProjects(user.id),
+    countTools(user.id),
+    countStash(user.id),
+    countQueue(user.id),
+    countSaved(user.id),
+    getYearOverview(user.id, await getCurrentYear()),
+  ]);
   const profileStarted = (profile?.crafts.length ?? 0) > 0;
 
   return (
@@ -149,6 +159,18 @@ async function MyWorkContent() {
           </>
         )}
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{es.goal.hubTitle}</CardTitle>
+          <CardDescription>{goalSummary(yearOverview)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <Link href="/mi-tejido/meta">{es.goal.hubCta}</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -253,6 +275,25 @@ function queueSummary(count: number): string {
     return es.queue.hubCountOne;
   }
   return es.queue.hubCount.replace("{count}", String(count));
+}
+
+/** Resumen de "Mi año tejiendo" para el hub: meta, o lo terminado del año. */
+function goalSummary({ goal, summary, year }: YearOverview): string {
+  if (goal !== null) {
+    return es.goal.hubSet
+      .replace("{done}", String(summary.finishedCount))
+      .replace("{target}", String(goal))
+      .replace("{year}", String(year));
+  }
+  if (summary.finishedCount === 1) {
+    return es.goal.hubFinishedOne.replace("{year}", String(year));
+  }
+  if (summary.finishedCount > 1) {
+    return es.goal.hubFinished
+      .replace("{count}", String(summary.finishedCount))
+      .replace("{year}", String(year));
+  }
+  return es.goal.hubEmpty;
 }
 
 /** Resumen de guardados para el hub. */

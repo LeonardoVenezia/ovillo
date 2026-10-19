@@ -14,6 +14,7 @@ import { suggestCatalogAmounts } from "../features/stash/schemas";
 import { deleteObject, putObject } from "../storage";
 import { account, user } from "./auth-schema";
 import { rowCounter } from "./counter-schema";
+import { yearlyGoal } from "./goal-schema";
 import {
   projectTool,
   tool,
@@ -134,6 +135,8 @@ type UserSpec = {
   queue?: QueueSpec[];
   /** Guardados y colecciones (spec §5.8). */
   collections?: CollectionSpec[];
+  /** Meta anual (spec §5.14): proyectos terminados que quiere lograr este año. */
+  goalTargetProjects?: number;
   projects: ProjectSpec[];
 };
 
@@ -333,6 +336,7 @@ const DEMO_USERS: UserSpec[] = [
         ],
       },
     ],
+    goalTargetProjects: 4,
     projects: [
       {
         slug: "sweater-otono",
@@ -567,6 +571,7 @@ const DEMO_USERS: UserSpec[] = [
         ],
       },
     ],
+    goalTargetProjects: 3,
     projects: [
       {
         slug: "manta-granny",
@@ -754,6 +759,7 @@ const DEMO_USERS: UserSpec[] = [
         ],
       },
     ],
+    goalTargetProjects: 2,
     projects: [
       {
         slug: "chal-encaje",
@@ -1304,6 +1310,7 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   let toolLinkCount = 0;
   let queueCount = 0;
   let savedCount = 0;
+  let goalCount = 0;
 
   try {
     // Los vínculos lana↔proyecto y herramienta↔proyecto (spec §5.3) van al
@@ -1642,13 +1649,26 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
         });
       }
     }
+
+    // Meta anual (spec §5.14): el año sale de la fecha real de la siembra.
+    if (spec.goalTargetProjects !== undefined) {
+      goalCount++;
+      await db.insert(yearlyGoal).values({
+        id: createId(),
+        userId,
+        year: new Date().getFullYear(),
+        targetProjects: spec.goalTargetProjects,
+        createdAt,
+        updatedAt: createdAt,
+      });
+    }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
 
   const projectCount = spec.projects.length;
   console.log(
-    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s), ${stashCount} lana(s), ${yarnLinkCount} lana(s) asignada(s), ${toolLinkCount} vínculo(s) de herramienta(s), ${queueCount} en la cola, ${savedCount} guardado(s)`,
+    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s), ${stashCount} lana(s), ${yarnLinkCount} lana(s) asignada(s), ${toolLinkCount} vínculo(s) de herramienta(s), ${queueCount} en la cola, ${savedCount} guardado(s), ${goalCount} meta(s)`,
   );
 }
 
@@ -1687,6 +1707,9 @@ async function main(): Promise<void> {
   );
   console.log(
     "  Quiero tejer suma 3 patrones y Guardados, 2 colecciones; /@mariaruiz muestra la colección pública «Para el invierno».",
+  );
+  console.log(
+    "  Mi año tejiendo: María (meta 4), Candela (3) y Lupita (2); /mi-tejido/meta y /@mariaruiz muestran progreso y resumen.",
   );
 }
 

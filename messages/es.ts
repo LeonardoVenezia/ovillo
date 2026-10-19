@@ -1158,6 +1158,51 @@ export const es = {
       generic: "No pudimos guardar. Probá de nuevo en un momentito.",
     },
   },
+  goal: {
+    title: "Mi año tejiendo",
+    intro:
+      "Tu meta de proyectos terminados y el resumen del año: cuánto tejiste y con qué lana.",
+    hubTitle: "Mi año tejiendo",
+    hubEmpty: "Anotá tu meta del año y mirá tu resumen.",
+    hubSet: "Vas {done} de {target} proyectos terminados en {year}.",
+    hubFinishedOne: "Terminaste 1 proyecto en {year}.",
+    hubFinished: "Terminaste {count} proyectos en {year}.",
+    hubCta: "Ver mi año",
+    goalTitle: "Meta del año",
+    goalNone: "Todavía no anotaste tu meta del año.",
+    goalHint:
+      "¿Cuántos proyectos te gustaría terminar en {year}? Es opcional: solo para mirar el camino.",
+    goalProgress: "Vas {done} de {target} proyectos terminados en {year}.",
+    goalReached:
+      "¡Meta cumplida: {done} de {target} proyectos terminados en {year}!",
+    targetLabel: "Proyectos para terminar",
+    targetPlaceholder: "Ej.: 6",
+    setCta: "Anotar mi meta",
+    changeCta: "Cambiar meta",
+    removeCta: "Quitar meta",
+    save: "Guardar meta",
+    saving: "Guardando…",
+    saved: "¡Meta guardada!",
+    removed: "Quitamos tu meta del año.",
+    cancel: "Cancelar",
+    summaryTitle: "Resumen {year}",
+    finishedLabel: "Proyectos terminados",
+    finishedOne: "1 proyecto",
+    finishedCount: "{count} proyectos",
+    finishedEmpty: "Todavía no terminaste proyectos este año.",
+    metersLabel: "Metros tejidos",
+    metersValue: "{meters} m",
+    metersHint:
+      "Se estima con los metros de cada lana asignada a tus proyectos terminados.",
+    topYarnLabel: "Lana más usada",
+    topYarnEmpty:
+      "Asigná lanas a tus proyectos terminados para ver cuál usás más.",
+    profileTitle: "Mi año tejiendo",
+    errors: {
+      targetRange: "Elegí un número entre 1 y 200.",
+      generic: "No pudimos guardar la meta. Probá de nuevo en un momentito.",
+    },
+  },
   onboarding: {
     title: "Te damos la bienvenida",
     subtitle:

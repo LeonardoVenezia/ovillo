@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { USERNAME_PATTERN } from "@/features/auth/schemas";
+import { ProfileYear } from "@/features/goal/components/profile-year";
 import { ProfileCard } from "@/features/profile/components/profile-card";
 import {
   getPublicProfileByUsername,
@@ -72,6 +73,9 @@ export default async function UserProfilePage({ params }: Props) {
         <ProfileProjectsSection data={data} />
       </Suspense>
       <Suspense fallback={null}>
+        <ProfileYearSection data={data} />
+      </Suspense>
+      <Suspense fallback={null}>
         <ProfileSavedSection data={data} />
       </Suspense>
     </section>
@@ -98,6 +102,22 @@ async function ProfileProjectsSection({ data }: { data: PublicProfile }) {
   return (
     <ProfileProjects userId={data.user.id} username={data.user.username} />
   );
+}
+
+/**
+ * "Mi año tejiendo" (spec §5.14): el progreso de la meta y el resumen anual.
+ * Misma regla que el resto de los detalles: en perfiles privados solo lo ve
+ * su dueña.
+ */
+async function ProfileYearSection({ data }: { data: PublicProfile }) {
+  const viewer = await getOptionalUser();
+  const isOwner = viewer?.id === data.user.id;
+  const detailsVisible =
+    !data.profile || data.profile.defaultVisibility !== "privado" || isOwner;
+  if (!detailsVisible) {
+    return null;
+  }
+  return <ProfileYear userId={data.user.id} />;
 }
 
 /**
