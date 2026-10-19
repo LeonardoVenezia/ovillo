@@ -18,14 +18,14 @@ export function YearSummaryRows({ summary }: { summary: YearSummary }) {
   const finished =
     summary.finishedCount === 1
       ? es.goal.finishedOne
-      : es.goal.finishedCount.replace(
-          "{count}",
-          String(summary.finishedCount),
-        );
+      : es.goal.finishedCount.replace("{count}", String(summary.finishedCount));
 
   const meters =
     summary.totalMeters !== null && summary.totalMeters > 0
-      ? es.goal.metersValue.replace("{meters}", formatCount(summary.totalMeters))
+      ? es.goal.metersValue.replace(
+          "{meters}",
+          formatCount(summary.totalMeters),
+        )
       : null;
 
   const topYarn = summary.topYarn;

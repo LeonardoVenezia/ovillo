@@ -66,7 +66,9 @@ async function resolveTargets(
 
   const db = getDb();
   const idsOf = (type: SavedType) => [
-    ...new Set(pairs.filter((pair) => pair.type === type).map((pair) => pair.id)),
+    ...new Set(
+      pairs.filter((pair) => pair.type === type).map((pair) => pair.id),
+    ),
   ];
   const patternIds = idsOf("patron");
   const projectIds = idsOf("proyecto");
@@ -99,10 +101,7 @@ async function resolveTargets(
           .from(project)
           .innerJoin(user, eq(project.userId, user.id))
           .where(
-            and(
-              inArray(project.id, projectIds),
-              isNull(project.deletedAt),
-            ),
+            and(inArray(project.id, projectIds), isNull(project.deletedAt)),
           )
       : [],
     yarnIds.length > 0
@@ -268,10 +267,7 @@ export async function listPublicCollections(
     .select({ id: collection.id, name: collection.name })
     .from(collection)
     .where(
-      and(
-        eq(collection.userId, userId),
-        eq(collection.visibility, "publico"),
-      ),
+      and(eq(collection.userId, userId), eq(collection.visibility, "publico")),
     )
     .orderBy(asc(collection.createdAt));
 

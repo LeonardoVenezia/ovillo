@@ -28,8 +28,7 @@ import {
 export type QueueActionResult = { ok: true } | { ok: false; error: string };
 
 export type QueueAddResult =
-  | { ok: true; id: string }
-  | { ok: false; error: string };
+  { ok: true; id: string } | { ok: false; error: string };
 
 /** Suma un patrón a la cola. Idempotente: si ya está, devuelve la entrada. */
 export async function addToQueue(input: {
@@ -56,10 +55,7 @@ export async function addToQueue(input: {
     .select({ id: queueItem.id })
     .from(queueItem)
     .where(
-      and(
-        eq(queueItem.userId, user.id),
-        eq(queueItem.patternId, found.id),
-      ),
+      and(eq(queueItem.userId, user.id), eq(queueItem.patternId, found.id)),
     )
     .limit(1);
   if (existing) {
@@ -87,9 +83,7 @@ export async function addToQueue(input: {
       id,
       userId: user.id,
       patternId: found.id,
-      position: appendPosition(
-        last ? [last.position] : [],
-      ),
+      position: appendPosition(last ? [last.position] : []),
     });
   } catch {
     // Dos toques a la vez sobre el mismo patrón: la unique frena el segundo.
@@ -97,10 +91,7 @@ export async function addToQueue(input: {
       .select({ id: queueItem.id })
       .from(queueItem)
       .where(
-        and(
-          eq(queueItem.userId, user.id),
-          eq(queueItem.patternId, found.id),
-        ),
+        and(eq(queueItem.userId, user.id), eq(queueItem.patternId, found.id)),
       )
       .limit(1);
     return raced
@@ -154,9 +145,7 @@ export async function moveQueueItem(input: {
     await db
       .update(queueItem)
       .set({ position: move.position })
-      .where(
-        and(eq(queueItem.id, move.id), eq(queueItem.userId, user.id)),
-      );
+      .where(and(eq(queueItem.id, move.id), eq(queueItem.userId, user.id)));
   }
 
   return { ok: true };
@@ -179,9 +168,7 @@ export async function updateQueueItem(
   const [entry] = await db
     .select({ id: queueItem.id })
     .from(queueItem)
-    .where(
-      and(eq(queueItem.id, parsed.data.id), eq(queueItem.userId, user.id)),
-    )
+    .where(and(eq(queueItem.id, parsed.data.id), eq(queueItem.userId, user.id)))
     .limit(1);
   if (!entry) {
     return { ok: false, error: es.queue.errors.notFound };

@@ -83,9 +83,7 @@ function CollectionForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">
-          {es.saved.visibilityLabel}
-        </span>
+        <span className="text-sm font-medium">{es.saved.visibilityLabel}</span>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"

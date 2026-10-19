@@ -130,10 +130,7 @@ export function QueueView({
     });
   }
 
-  function handleDragOver(
-    event: React.DragEvent<HTMLLIElement>,
-    id: string,
-  ) {
+  function handleDragOver(event: React.DragEvent<HTMLLIElement>, id: string) {
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     const before = event.clientY < rect.top + rect.height / 2;
@@ -149,8 +146,7 @@ export function QueueView({
     }
     const rest = entries.filter((entry) => entry.id !== draggingId);
     const index = rest.findIndex((entry) => entry.id === id);
-    const targetIndex =
-      dropTarget && !dropTarget.before ? index + 1 : index;
+    const targetIndex = dropTarget && !dropTarget.before ? index + 1 : index;
     const movedId = draggingId;
     setDraggingId(null);
     setDropTarget(null);

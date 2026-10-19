@@ -16,10 +16,7 @@ export function ProfileCollections({
   collections: PublicCollection[];
 }) {
   return (
-    <section
-      className="flex flex-col gap-3"
-      data-testid="profile-collections"
-    >
+    <section className="flex flex-col gap-3" data-testid="profile-collections">
       <h2 className="font-heading text-lg font-semibold">
         {es.saved.publicTitle}
       </h2>
@@ -52,9 +49,7 @@ export function ProfileCollections({
                   {item.label}
                 </Link>
                 {item.subtitle ? (
-                  <span className="text-muted-foreground">
-                    {item.subtitle}
-                  </span>
+                  <span className="text-muted-foreground">{item.subtitle}</span>
                 ) : null}
               </li>
             ))}

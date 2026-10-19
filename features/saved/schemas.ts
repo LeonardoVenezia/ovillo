@@ -1,9 +1,6 @@
 import { z } from "zod";
 
-import {
-  COLLECTION_NAME_MAX,
-  SAVED_TYPES,
-} from "@/db/saved-schema";
+import { COLLECTION_NAME_MAX, SAVED_TYPES } from "@/db/saved-schema";
 import { es } from "@/messages/es";
 
 /**

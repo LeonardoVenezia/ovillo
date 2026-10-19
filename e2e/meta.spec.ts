@@ -58,7 +58,9 @@ test("resumen: un proyecto terminado con lana suma metros y lana más usada", as
   // Lana del catálogo (Fil Piuma: 400 m y 150 g por ovillo), 1 ovillo.
   await page.goto("/mi-tejido/lanas");
   await page.getByTestId("stash-new-cta").click();
-  await page.getByTestId("stash-yarn").selectOption({ label: "Katia · Fil Piuma" });
+  await page
+    .getByTestId("stash-yarn")
+    .selectOption({ label: "Katia · Fil Piuma" });
   await page.getByTestId("stash-color-verde").click();
   await page.getByTestId("stash-skeins").fill("1");
   await page.getByTestId("stash-save").click();
@@ -68,7 +70,9 @@ test("resumen: un proyecto terminado con lana suma metros y lana más usada", as
   await page.goto("/mi-tejido/proyectos/nuevo");
   await page.getByLabel("Nombre").fill(PROJECT);
   await page.getByRole("button", { name: "Crear proyecto" }).click();
-  await expect(page).toHaveURL(new RegExp(`/mi-tejido/proyectos/${PROJECT_SLUG}$`));
+  await expect(page).toHaveURL(
+    new RegExp(`/mi-tejido/proyectos/${PROJECT_SLUG}$`),
+  );
 
   await page.getByTestId("project-yarn-add").click();
   await selectByText(page, "project-yarn-stash-select", STASH_OPTION);
@@ -102,7 +106,9 @@ test("resumen: un proyecto terminado con lana suma metros y lana más usada", as
   await expect(page.getByTestId("year-summary-top-yarn")).toContainText(
     "Fil Piuma · Katia",
   );
-  await expect(page.getByTestId("year-summary-top-yarn")).toContainText("400 m");
+  await expect(page.getByTestId("year-summary-top-yarn")).toContainText(
+    "400 m",
+  );
 
   // El hub lo resume y lleva a la página de la meta.
   await page.goto("/mi-tejido");

@@ -131,7 +131,9 @@ test("colección privada: no se ve en el perfil y borrarla no pierde nada", asyn
   await page.getByTestId("collection-submit").click();
   await expect(page.getByText("¡Colección creada!")).toBeVisible();
 
-  const yarnRow = page.getByTestId("saved-row").filter({ hasText: "Fil Piuma" });
+  const yarnRow = page
+    .getByTestId("saved-row")
+    .filter({ hasText: "Fil Piuma" });
   await yarnRow
     .getByTestId("saved-move-select")
     .selectOption({ label: COLLECTION_PRIVATE });

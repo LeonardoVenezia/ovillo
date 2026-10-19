@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GoalCard } from "@/features/goal/components/goal-card";
 import { YearSummaryRows } from "@/features/goal/components/year-summary";

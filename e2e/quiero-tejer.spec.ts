@@ -113,7 +113,9 @@ test("detalles: lana planeada, fecha objetivo y notas", async ({ page }) => {
   await row.getByTestId("queue-save-details").click();
   await expect(page.getByText("Detalles guardados.")).toBeVisible();
 
-  const updated = page.getByTestId("queue-row").filter({ hasText: PATTERN_ONE });
+  const updated = page
+    .getByTestId("queue-row")
+    .filter({ hasText: PATTERN_ONE });
   await expect(updated.getByTestId("queue-planned-yarn")).toContainText(
     STASH_NAME,
   );

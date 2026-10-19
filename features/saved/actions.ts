@@ -33,8 +33,7 @@ import {
 export type SavedActionResult = { ok: true } | { ok: false; error: string };
 
 export type SavedSaveResult =
-  | { ok: true; id: string }
-  | { ok: false; error: string };
+  { ok: true; id: string } | { ok: false; error: string };
 
 /** Código de Postgres para violación de unique. */
 function isUniqueViolation(error: unknown): boolean {
@@ -275,9 +274,7 @@ export async function moveSavedItem(input: {
   const [item] = await db
     .select({ id: savedItem.id })
     .from(savedItem)
-    .where(
-      and(eq(savedItem.id, parsed.data.id), eq(savedItem.userId, user.id)),
-    )
+    .where(and(eq(savedItem.id, parsed.data.id), eq(savedItem.userId, user.id)))
     .limit(1);
   if (!item) {
     return { ok: false, error: es.saved.errors.notFound };
