@@ -215,7 +215,7 @@ Pendientes de la fase (no frenan; siguen):
 
 ## Fase 6 — Comunidad (2026-10-19 → )
 
-Tramos: 1) **grupos y membresía** (hecho) · 2) **hilos y respuestas** (tipos, solución, fotos, "Pedir ayuda" desde un proyecto) · 3) **KAL/CAL** (eventos dentro del grupo) · 4) **glosario** (términos con variantes por país, abreviaturas e inglés; edición para moderadores).
+Tramos: 1) **grupos y membresía** (hecho) · 2) **hilos y respuestas** (tipos, solución, fotos, "Pedir ayuda" desde un proyecto) (hecho) · 3) **KAL/CAL** (eventos dentro del grupo) · 4) **glosario** (términos con variantes por país, abreviaturas e inglés; edición para moderadores).
 
 Hecho (grupos y membresía, tramo 1):
 - **Modelo** (spec §5.9/§6, migración `0013`): `group` (slug único, nombre, descripción, reglas, categoría, portada opcional, `join_policy` `abierto` | `aprobacion` y dueña/o) y `group_member` (una fila por persona y grupo: rol `dueno` | `moderador` | `miembro` y estado `activo` | `pendiente`; una pendiente es una solicitud de ingreso). Ver D-054.
@@ -225,6 +225,16 @@ Hecho (grupos y membresía, tramo 1):
 - **Calidad**: **201 tests** unitarios (11 nuevos: slug, permisos de moderación, orden de integrantes y validación del formulario de grupo) + **89 e2e** en verde — 5 nuevos (grupos oficiales sin sesión, búsqueda y 404 real; grupo abierto creado y unión de la segunda cuenta; grupo con aprobación con solicitud, aceptación y salida; y edición + nombramiento de moderadora). Build verde.
 - **Producción**: commit `6739410`, CI en verde y deploy verificado — `/comunidad` y `/grupos` con los 6 grupos oficiales ("6 grupos"), 404 real en un slug inexistente, `/grupos/nuevo` sin sesión con 307 a `/ingresar?volver=%2Fgrupos%2Fnuevo`, y con la cuenta demo "Tus grupos" con las dos moderaciones de María y `/grupos/sugerencias-para-ovillo` con la solicitud pendiente de Sol y Aceptar/Rechazar.
 
+Hecho (hilos y respuestas, tramo 2):
+- **Modelo** (spec §5.9/§6, migración `0014`): `thread` (tipo `pregunta` | `charla` | `muestro` | `anuncio`, título 120, cuerpo 4000, hasta 4 fotos en `image_ids`, proyecto opcional que se desvincula al borrarse, `pinned`, `locked`, `solution_post_id` y `last_activity_at`) + `post` (respuestas planas, cuerpo 4000 y hasta 4 fotos). Ver D-055.
+- **Rutas**: `/grupos/[slug]/hilos` (listado del grupo: fijados primero y después por último movimiento), `/grupos/[slug]/hilos/nuevo` (compositor privado: grupo fijo o elegido entre los propios, tipos filtrados por rol) y `/grupos/[slug]/hilos/[id]` (ficha: tipo e insignias —Resuelta/Fijado/Cerrado—, cuerpo, fotos, tarjeta del proyecto, controles de moderación, respuestas con "Solución" y el formulario de respuesta con su aviso según quien mira). La ficha del grupo suma "Hilos recientes" (10) y `/comunidad` estrena "Hilos recientes" (5) y "Preguntas sin responder" (piden 0 respuestas, de cualquier grupo: vidriera de ayuda).
+- **Permisos y moderación**: escriben solo integrantes activos —una solicitud pendiente mira pero no escribe— y los anuncios son de la moderación; la **solución** la marca quien preguntó o la moderación (interruptor, solo en preguntas) y fijar/cerrar/reabrir es de moderación (cerrado no acepta respuestas nuevas, tampoco de quien abrió el hilo). Cada acción revalida el permiso en el servidor (spec §9).
+- **«Pedir ayuda»** (spec §5.9): botón en la ficha del proyecto propio → `/comunidad/preguntar?proyecto=id` con el título precargado ("Ayuda con …"), la tarjeta del proyecto (portada, nombre y su patrón) y el tipo fijo en pregunta; un proyecto privado solo asoma a su dueña (misma vara que el perfil, D-042). Sin proyecto, el mismo compositor sirve para preguntar suelto (el grupo se elige entre los que ya integra).
+- **Fotos**: destino nuevo `hilo` en `/api/fotos` (hasta 4 por hilo y por respuesta, comprimidas en el navegador, R2 en `comunidad/{userId}/…` y validadas contra quien publica).
+- **Datos demo**: 7 hilos y 8 respuestas en los grupos oficiales —bienvenida fijada por Equipo Ovillo con respuestas, "muestro" de Lupita con foto, pregunta resuelta de María con el sweater adjunto, pregunta sin responder de Sol y anuncio fijado en Sugerencias—.
+- **Calidad**: **211 tests** unitarios (10 nuevos: permisos de tipos y de solución, validación de hilos y respuestas —incluido "solo fotos"— y etiquetas de tiempo) + **94 e2e** en verde — 5 nuevos (grupo con pregunta y vidriera, invitación a ingresar y respuesta de quien se suma, solución + fijar/cerrar/reabrir, "Pedir ayuda" desde la comunidad y 404 real del hilo)—. Build verde.
+
 Pendientes de la fase (no frenan; siguen):
 - [ ] Diferidos del tramo 1 (Fase 8 / futuros): borrado de grupos, expulsión de integrantes y baneo (`baneado`), transferencia de propiedad y subir la portada del grupo desde la interfaz (el destino `grupo` de `/api/fotos`).
+- [ ] Diferidos del tramo 2 (Fase 8 / futuros): editar y borrar publicaciones propias, respuestas anidadas, citas y menciones, reacciones "útil" y avisos al autor de preguntas sin responder.
 

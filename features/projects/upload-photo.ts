@@ -6,7 +6,8 @@ import type { PhotoView } from "./media-view";
 /**
  * Sube una foto desde el navegador: comprime, manda la grande y la miniatura
  * al Route Handler `/api/fotos` y devuelve la foto guardada. El destino puede
- * ser un proyecto (galería o entrada) o una lana del inventario (D-046).
+ * ser un proyecto (galería o entrada), una lana del inventario (D-046) o un
+ * hilo de la comunidad (D-055).
  */
 
 export type UploadResult =
@@ -14,7 +15,8 @@ export type UploadResult =
 
 export type UploadTarget =
   | { projectId: string; purpose: "galeria" | "entrada" }
-  | { stashItemId: string; purpose: "lana" };
+  | { stashItemId: string; purpose: "lana" }
+  | { purpose: "hilo" };
 
 export async function uploadPhoto(
   input: UploadTarget & { file: File },
@@ -35,7 +37,7 @@ export async function uploadPhoto(
   const form = new FormData();
   if (input.purpose === "lana") {
     form.set("stashItemId", input.stashItemId);
-  } else {
+  } else if (input.purpose !== "hilo") {
     form.set("projectId", input.projectId);
   }
   form.set("purpose", input.purpose);

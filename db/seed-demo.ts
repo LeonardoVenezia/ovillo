@@ -1,7 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import { hashPassword } from "better-auth/crypto";
 import { config } from "dotenv";
-import { eq, inArray, like } from "drizzle-orm";
+import { and, eq, inArray, isNull, like } from "drizzle-orm";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -16,8 +16,11 @@ import { account, user } from "./auth-schema";
 import {
   group,
   groupMember,
+  post,
+  thread,
   type GroupCategory,
   type JoinPolicy,
+  type ThreadType,
 } from "./community-schema";
 import { rowCounter } from "./counter-schema";
 import { yearlyGoal } from "./goal-schema";
@@ -166,6 +169,32 @@ type GroupSpec = {
   joinPolicy: JoinPolicy;
   createdDaysAgo: number;
   photo: PhotoSpec;
+};
+
+type ThreadSpec = {
+  /** `slug` del grupo oficial (`OFFICIAL_GROUPS`). */
+  groupSlug: string;
+  /** `username` de quien abre el hilo: tiene que ser miembro activo. */
+  author: string;
+  type: ThreadType;
+  title: string;
+  body: string;
+  createdDaysAgo: number;
+  /** `slug` de un proyecto propio que acompaña al hilo (el "Pedir ayuda"). */
+  projectSlug?: string;
+  pinned?: boolean;
+  locked?: boolean;
+  photos?: PhotoSpec[];
+  posts?: ThreadPostSpec[];
+  /** Índice (0-based) dentro de `posts` de la respuesta solución. */
+  solution?: number;
+};
+
+type ThreadPostSpec = {
+  author: string;
+  body: string;
+  createdDaysAgo: number;
+  photos?: PhotoSpec[];
 };
 
 type QueueSpec = {
@@ -1125,6 +1154,125 @@ const OFFICIAL_GROUPS: GroupSpec[] = [
   },
 ];
 
+/** Hilos y respuestas demo (spec §5.9): cubren los cuatro tipos y los vacíos. */
+const THREADS: ThreadSpec[] = [
+  {
+    groupSlug: "ayuda-para-principiantes",
+    author: "mariaruiz",
+    type: "pregunta",
+    title: "¿Cómo cierro el cuello del sweater sin que quede flojo?",
+    body: "Estoy terminando el Sweater Otoño y el cuello me quedó un poco abierto. ¿Cierran con una aguja más chica o rematan distinto? Adjunto el proyecto para que vean de qué hablo.",
+    createdDaysAgo: 12,
+    projectSlug: "sweater-otono",
+    posts: [
+      {
+        author: "lupitateje",
+        body: "A mí me resultó pasar a una aguja dos números más chica en las últimas vueltas y rematar por el revés. ¡Queda bien pegadito!",
+        createdDaysAgo: 11,
+      },
+      {
+        author: "mariaruiz",
+        body: "¡Era eso! Probé con aguja más chica en las últimas dos vueltas y quedó justo. Gracias 💛",
+        createdDaysAgo: 10,
+      },
+    ],
+    solution: 0,
+  },
+  {
+    groupSlug: "dos-agujas",
+    author: "lupitateje",
+    type: "muestro",
+    title: "Terminé el chal de punto arroz 🧶",
+    body: "Dos semanas de agujas y por fin salió. Lo tejí con una lana rústica que tenía en el inventario. ¿Cómo lo ven?",
+    createdDaysAgo: 8,
+    photos: [
+      { alt: "Chal tejido en punto arroz", colors: CANELA, aspect: "s" },
+    ],
+    posts: [
+      {
+        author: "mariaruiz",
+        body: "¡Te quedó hermoso! El punto arroz le da una textura increíble.",
+        createdDaysAgo: 7,
+      },
+    ],
+  },
+  {
+    groupSlug: "crochet",
+    author: "solaguirre",
+    type: "pregunta",
+    title: "¿Cómo se hacen los puntos puff sin que se desarmen?",
+    body: "Me quedan sueltos los puff del granny que estoy armando. ¿Cuántas lazadas hacen ustedes y cómo rematan el punto?",
+    createdDaysAgo: 2,
+  },
+  {
+    groupSlug: "crochet",
+    author: "candelateje",
+    type: "charla",
+    title: "¿Qué están tejiendo a crochet esta semana?",
+    body: "Yo arranqué una manta de grannys para mi sobrina y ya voy por el cuadro 12. Cuenten las suyas así nos inspiramos.",
+    createdDaysAgo: 6,
+    posts: [
+      {
+        author: "solaguirre",
+        body: "Qué linda idea. Yo tengo a medias un top que no me decido a terminar…",
+        createdDaysAgo: 5,
+      },
+    ],
+  },
+  {
+    groupSlug: "charla-general",
+    author: "ovillo",
+    type: "anuncio",
+    title: "¡Bienvenidas a la comunidad de Ovillo!",
+    body: "Este es el rincón distendido para charlar de todo un poco. Presentate, contá qué estás tejiendo y sacate las dudas: acá nadie teje sola.",
+    createdDaysAgo: 20,
+    pinned: true,
+    posts: [
+      {
+        author: "mariaruiz",
+        body: "¡Qué lindo que esto esté en marcha! Yo arranco: tejo desde los 12 y ahora ando con dos agujas. 💛",
+        createdDaysAgo: 19,
+      },
+      {
+        author: "candelateje",
+        body: "Hola a todas 👋 Acá, fanática del crochet y de los amigurumis. ¡Nos vamos a divertir!",
+        createdDaysAgo: 18,
+      },
+    ],
+  },
+  {
+    groupSlug: "ayuda-para-principiantes",
+    author: "lupitateje",
+    type: "pregunta",
+    title: "¿Cómo leo un patrón con abreviaturas tipo «2 pj, 1 laz»?",
+    body: "Estoy con mi primer patrón escrito y me pierdo con las abreviaturas. ¿Hay alguna lista confiable para arrancar?",
+    createdDaysAgo: 4,
+    posts: [
+      {
+        author: "mariaruiz",
+        body: "¡Bienvenida al club de las abreviaturas! Anotá en un papelito las que más usa tu patrón y tenelas a mano; con la práctica se vuelven automáticas.",
+        createdDaysAgo: 3,
+      },
+    ],
+  },
+  {
+    groupSlug: "sugerencias-para-ovillo",
+    author: "ovillo",
+    type: "anuncio",
+    title: "Contanos qué te gustaría que Ovillo tenga",
+    body: "Estamos construyendo esto entre todas. Si hay algo que te falta o algo que te resulta incómodo, escribilo acá: leemos todo.",
+    createdDaysAgo: 15,
+    pinned: true,
+    posts: [
+      {
+        author: "mariaruiz",
+        body: "A mí me encantaría una vista de calendario para organizarme con los tejidos del año.",
+        createdDaysAgo: 14,
+      },
+    ],
+  },
+];
+
 // ---------------------------------------------------------------------------
 // Fechas
 // ---------------------------------------------------------------------------
@@ -1838,6 +1986,8 @@ async function seedCommunity(users: Map<string, string>): Promise<void> {
 
   const tempDir = mkdtempSync(join(tmpdir(), "ovillo-groups-"));
   let membershipCount = 0;
+  let threadCount = 0;
+  let postCount = 0;
 
   try {
     const groupIds = new Map<string, string>();
@@ -1905,12 +2055,113 @@ async function seedCommunity(users: Map<string, string>): Promise<void> {
         });
       }
     }
+
+    for (const spec of THREADS) {
+      const groupId = groupIds.get(spec.groupSlug);
+      const authorId = users.get(spec.author);
+      if (!groupId || !authorId) {
+        console.warn(
+          `  Aviso: no se pudo sembrar el hilo "${spec.title}" (grupo o cuenta faltante).`,
+        );
+        continue;
+      }
+
+      let projectId: string | null = null;
+      if (spec.projectSlug) {
+        const [ownProject] = await db
+          .select({ id: project.id })
+          .from(project)
+          .where(
+            and(
+              eq(project.userId, authorId),
+              eq(project.slug, spec.projectSlug),
+              isNull(project.deletedAt),
+            ),
+          )
+          .limit(1);
+        projectId = ownProject?.id ?? null;
+      }
+
+      const threadId = createId();
+      const createdAt = daysAgoDate(spec.createdDaysAgo);
+      const imageIds: string[] = [];
+      for (const photo of spec.photos ?? []) {
+        imageIds.push(
+          await uploadPhoto(authorId, `comunidad/${threadId}`, photo, tempDir),
+        );
+      }
+
+      await db.insert(thread).values({
+        id: threadId,
+        groupId,
+        authorId,
+        type: spec.type,
+        title: spec.title,
+        body: spec.body,
+        imageIds,
+        projectId,
+        pinned: spec.pinned ?? false,
+        locked: spec.locked ?? false,
+        lastActivityAt: createdAt,
+        createdAt,
+      });
+
+      const postIds: string[] = [];
+      let lastActivityAt = createdAt;
+      for (const postSpec of spec.posts ?? []) {
+        const postAuthorId = users.get(postSpec.author);
+        if (!postAuthorId) {
+          continue;
+        }
+        const postCreatedAt = daysAgoDate(postSpec.createdDaysAgo);
+        const postImageIds: string[] = [];
+        for (const photo of postSpec.photos ?? []) {
+          postImageIds.push(
+            await uploadPhoto(
+              postAuthorId,
+              `comunidad/${threadId}`,
+              photo,
+              tempDir,
+            ),
+          );
+        }
+
+        const [inserted] = await db
+          .insert(post)
+          .values({
+            threadId,
+            authorId: postAuthorId,
+            body: postSpec.body,
+            imageIds: postImageIds,
+            createdAt: postCreatedAt,
+          })
+          .returning({ id: post.id });
+        postIds.push(inserted.id);
+        postCount += 1;
+        if (postCreatedAt > lastActivityAt) {
+          lastActivityAt = postCreatedAt;
+        }
+      }
+
+      if (spec.solution !== undefined && postIds[spec.solution]) {
+        await db
+          .update(thread)
+          .set({ solutionPostId: postIds[spec.solution] })
+          .where(eq(thread.id, threadId));
+      }
+      await db
+        .update(thread)
+        .set({ lastActivityAt })
+        .where(eq(thread.id, threadId));
+
+      threadCount += 1;
+    }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
 
   console.log(
-    `  ✓ comunidad — ${OFFICIAL_GROUPS.length} grupo(s) oficiales, ${membershipCount} membresía(s)`,
+    `  ✓ comunidad — ${OFFICIAL_GROUPS.length} grupo(s) oficiales, ${membershipCount} membresía(s), ${threadCount} hilo(s) y ${postCount} respuesta(s)`,
   );
 }
 
@@ -1961,6 +2212,9 @@ async function main(): Promise<void> {
   );
   console.log(
     "  Comunidad: /comunidad lista los 6 grupos oficiales; en /grupos/sugerencias-para-ovillo espera la solicitud de Sol y @mariaruiz modera.",
+  );
+  console.log(
+    "  Hilos: 7 hilos y 8 respuestas (charla, muestra con foto, pregunta resuelta y una sin responder); /grupos/ayuda-para-principiantes/hilos muestra el «Pedir ayuda» con el sweater de @mariaruiz.",
   );
 }
 

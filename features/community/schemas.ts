@@ -6,7 +6,13 @@ import {
   GROUP_NAME_MAX,
   GROUP_RULES_MAX,
   JOIN_POLICIES,
+  POST_BODY_MAX,
+  THREAD_BODY_MAX,
+  THREAD_PHOTOS_MAX,
+  THREAD_TITLE_MAX,
+  THREAD_TYPES,
   type GroupRole,
+  type ThreadType,
 } from "@/db/community-schema";
 import { slugify } from "@/lib/slug";
 import { es } from "@/messages/es";
@@ -17,8 +23,8 @@ import { es } from "@/messages/es";
  * `groupFormSchema` es el esquema del formulario de grupo: a diferencia de
  * otros formularios, todo llega ya como texto o elección, así que el mismo
  * esquema sirve para el cliente y para la acción del servidor (que revalida
- * siempre, spec §9). Acá también viven los helpers puros de permisos y el
- * orden de la lista de integrantes.
+ * siempre, spec §9). Acá también viven los helpers puros de permisos, los
+ * esquemas de hilos y respuestas, y el orden de la lista de integrantes.
  */
 
 export const groupFormSchema = z.object({
@@ -67,6 +73,69 @@ export const memberRoleSchema = z.object({
   userId: z.string().min(1),
   role: z.enum(["moderador", "miembro"]),
 });
+
+export const threadFormSchema = z
+  .object({
+    groupId: z.string().min(1),
+    type: z.enum(THREAD_TYPES, {
+      message: es.community.errors.threadTypeInvalid,
+    }),
+    title: z
+      .string()
+      .trim()
+      .min(1, es.community.errors.titleRequired)
+      .max(THREAD_TITLE_MAX, es.community.errors.titleLong),
+    body: z.string().trim().max(THREAD_BODY_MAX, es.community.errors.bodyLong),
+    imageIds: z.array(z.string().min(1)).max(THREAD_PHOTOS_MAX),
+    /** Proyecto que acompaña al hilo ("Pedir ayuda"; opcional). */
+    projectId: z.string().min(1).optional(),
+  })
+  .refine((data) => data.body.length > 0 || data.imageIds.length > 0, {
+    path: ["body"],
+    message: es.community.errors.emptyThread,
+  });
+
+export type ThreadFormValues = z.infer<typeof threadFormSchema>;
+
+export const postFormSchema = z
+  .object({
+    threadId: z.string().min(1),
+    body: z.string().trim().max(POST_BODY_MAX, es.community.errors.bodyLong),
+    imageIds: z.array(z.string().min(1)).max(THREAD_PHOTOS_MAX),
+  })
+  .refine((data) => data.body.length > 0 || data.imageIds.length > 0, {
+    path: ["body"],
+    message: es.community.errors.emptyPost,
+  });
+
+export type PostFormValues = z.infer<typeof postFormSchema>;
+
+export const solutionSchema = z.object({
+  threadId: z.string().min(1),
+  postId: z.string().min(1),
+});
+
+export const threadFlagSchema = z.object({
+  threadId: z.string().min(1),
+  flag: z.enum(["pinned", "locked"]),
+  value: z.boolean(),
+});
+
+/** Tipos de hilo que puede abrir cada rol: los anuncios son de moderación. */
+export function canCreateThreadType(
+  role: GroupRole | null,
+  type: ThreadType,
+): boolean {
+  return type !== "anuncio" || canModerate(role);
+}
+
+/** Quien abrió la pregunta o la moderación del grupo deciden la solución. */
+export function canMarkSolution(input: {
+  viewerRole: GroupRole | null;
+  isAuthor: boolean;
+}): boolean {
+  return input.isAuthor || canModerate(input.viewerRole);
+}
 
 /** Slug público del grupo (`/grupos/slug`); si el nombre no deja nada, `grupo`. */
 export function groupSlug(name: string): string {

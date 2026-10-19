@@ -50,7 +50,7 @@ test("vacío: el hub invita y la página muestra el estado vacío", async ({
   await page.getByRole("link", { name: "Ver mis herramientas" }).click();
   await expect(page).toHaveURL(/\/mi-tejido\/herramientas$/);
   await expect(
-    page.getByRole("heading", { name: "Herramientas" }),
+    page.getByRole("heading", { name: "Herramientas", exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Todavía no hay herramientas")).toBeVisible();
   await expect(page.getByTestId("equivalence-table")).toBeVisible();

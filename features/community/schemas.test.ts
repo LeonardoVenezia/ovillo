@@ -1,16 +1,22 @@
 import { describe, expect, it } from "vitest";
 
+import { repliesLabel, whenLabel } from "./format";
 import {
+  canCreateThreadType,
+  canMarkSolution,
   canModerate,
   groupFormSchema,
   groupSlug,
   isGroupOwner,
+  postFormSchema,
   sortGroupMembers,
+  threadFormSchema,
 } from "./schemas";
 
 /**
- * Reglas chicas de la comunidad: slug, permisos, orden de integrantes y
- * validación del formulario. `pnpm vitest run features/community/schemas.test.ts`.
+ * Reglas chicas de la comunidad: slug, permisos, orden de integrantes,
+ * validación de los formularios de grupo y de hilo, y etiquetas de tiempo.
+ * `pnpm vitest run features/community/schemas.test.ts`.
  */
 
 describe("groupSlug", () => {
@@ -124,5 +130,137 @@ describe("groupFormSchema", () => {
     expect(
       groupFormSchema.safeParse({ ...valid, joinPolicy: "invitacion" }).success,
     ).toBe(false);
+  });
+});
+
+describe("canCreateThreadType", () => {
+  it("reserva los anuncios para la moderación", () => {
+    expect(canCreateThreadType("miembro", "charla")).toBe(true);
+    expect(canCreateThreadType("miembro", "pregunta")).toBe(true);
+    expect(canCreateThreadType(null, "muestro")).toBe(true);
+    expect(canCreateThreadType("miembro", "anuncio")).toBe(false);
+    expect(canCreateThreadType(null, "anuncio")).toBe(false);
+    expect(canCreateThreadType("moderador", "anuncio")).toBe(true);
+    expect(canCreateThreadType("dueno", "anuncio")).toBe(true);
+  });
+});
+
+describe("canMarkSolution", () => {
+  it("deja marcar a quien abrió la pregunta y a la moderación", () => {
+    expect(canMarkSolution({ viewerRole: null, isAuthor: true })).toBe(true);
+    expect(canMarkSolution({ viewerRole: "moderador", isAuthor: false })).toBe(
+      true,
+    );
+    expect(canMarkSolution({ viewerRole: "dueno", isAuthor: false })).toBe(
+      true,
+    );
+  });
+
+  it("frena al resto de la comunidad", () => {
+    expect(canMarkSolution({ viewerRole: "miembro", isAuthor: false })).toBe(
+      false,
+    );
+    expect(canMarkSolution({ viewerRole: null, isAuthor: false })).toBe(false);
+  });
+});
+
+describe("threadFormSchema", () => {
+  const valid = {
+    groupId: "g1",
+    type: "pregunta",
+    title: "¿Cómo cierro el cuello?",
+    body: "Probé con aguja 4 y no me queda prolijo.",
+    imageIds: [],
+  };
+
+  it("acepta un hilo completo y recorta el texto", () => {
+    const parsed = threadFormSchema.safeParse({ ...valid, title: "  hola  " });
+    expect(parsed.success && parsed.data.title).toBe("hola");
+  });
+
+  it("exige título y algo que publicar", () => {
+    expect(threadFormSchema.safeParse({ ...valid, title: "   " }).success).toBe(
+      false,
+    );
+    expect(threadFormSchema.safeParse({ ...valid, body: "" }).success).toBe(
+      false,
+    );
+    // Una foto alcanza como contenido; el proyecto adjunto no.
+    expect(
+      threadFormSchema.safeParse({ ...valid, body: "", imageIds: ["i1"] })
+        .success,
+    ).toBe(true);
+    expect(
+      threadFormSchema.safeParse({ ...valid, body: "", projectId: "p1" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("frena tipo, título, texto y fotos fuera de rango", () => {
+    expect(threadFormSchema.safeParse({ ...valid, type: "otro" }).success).toBe(
+      false,
+    );
+    expect(
+      threadFormSchema.safeParse({ ...valid, title: "a".repeat(121) }).success,
+    ).toBe(false);
+    expect(
+      threadFormSchema.safeParse({ ...valid, body: "a".repeat(4001) }).success,
+    ).toBe(false);
+    expect(
+      threadFormSchema.safeParse({
+        ...valid,
+        imageIds: ["1", "2", "3", "4", "5"],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("postFormSchema", () => {
+  const valid = {
+    threadId: "h1",
+    body: "Probá cerrar en el revés.",
+    imageIds: [],
+  };
+
+  it("acepta una respuesta con texto o con foto", () => {
+    expect(postFormSchema.safeParse(valid).success).toBe(true);
+    expect(
+      postFormSchema.safeParse({ ...valid, body: "", imageIds: ["i1"] })
+        .success,
+    ).toBe(true);
+  });
+
+  it("no deja respuestas vacías y frena textos larguísimos", () => {
+    expect(postFormSchema.safeParse({ ...valid, body: "   " }).success).toBe(
+      false,
+    );
+    expect(
+      postFormSchema.safeParse({ ...valid, body: "a".repeat(4001) }).success,
+    ).toBe(false);
+  });
+});
+
+describe("whenLabel", () => {
+  const now = new Date("2026-10-19T12:00:00Z");
+
+  it("resume los últimos movimientos", () => {
+    expect(whenLabel(new Date("2026-10-19T11:59:30Z"), now)).toBe("recién");
+    expect(whenLabel(new Date("2026-10-19T11:30:00Z"), now)).toBe(
+      "hace 30 min",
+    );
+    expect(whenLabel(new Date("2026-10-19T09:00:00Z"), now)).toBe("hace 3 h");
+    expect(whenLabel(new Date("2026-10-18T09:00:00Z"), now)).toBe("ayer");
+    expect(whenLabel(new Date("2026-10-15T09:00:00Z"), now)).toBe(
+      "hace 4 días",
+    );
+    expect(whenLabel(new Date("2026-09-01T09:00:00Z"), now)).toContain("2026");
+  });
+});
+
+describe("repliesLabel", () => {
+  it("cambia con la cantidad de respuestas", () => {
+    expect(repliesLabel(0)).toBe("Todavía sin respuestas");
+    expect(repliesLabel(1)).toBe("1 respuesta");
+    expect(repliesLabel(4)).toBe("4 respuestas");
   });
 });

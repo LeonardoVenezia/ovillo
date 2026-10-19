@@ -9,11 +9,12 @@ import { getEnv } from "@/lib/env";
  * Middleware de rutas (spec §5.1: "rutas privadas protegidas en servidor").
  *
  * - Perfiles `/@usuario`, proyectos `/@usuario/proyectos/slug`, lanas
- *   (`/lanas/marca/slug`), patrones (`/patrones/slug`) y grupos
- *   (`/grupos/slug`): chequea que existan y, si no, reescribe a la ruta de
- *   404. Hace falta acá porque el caparazón PPR de las rutas dinámicas se
- *   sirve con estado 200 y `notFound()` ya no puede cambiarlo (ver D-023 y
- *   D-031). Ante errores de base se deja pasar: la página decide.
+ *   (`/lanas/marca/slug`), patrones (`/patrones/slug`), grupos
+ *   (`/grupos/slug`) e hilos (`/grupos/slug/hilos/id`): chequea que existan
+ *   y, si no, reescribe a la ruta de 404. Hace falta acá porque el caparazón
+ *   PPR de las rutas dinámicas se sirve con estado 200 y `notFound()` ya no
+ *   puede cambiarlo (ver D-023 y D-031). Ante errores de base se deja pasar:
+ *   la página decide.
  * - Rutas privadas: redirección optimista si falta la cookie de sesión; la
  *   validación real (contra la base) la hace cada página con `requireUser()`.
  */
@@ -38,6 +39,12 @@ const GROUP_PATH_PATTERN = /^\/grupos\/([^/]+)$/;
 
 /** Edición de un grupo propio (`/grupos/slug/editar`). */
 const GROUP_EDIT_PATH_PATTERN = /^\/grupos\/([^/]+)\/editar$/;
+
+/** Hilos de un grupo: listado y ficha (`/grupos/slug/hilos[...]`). */
+const GROUP_THREADS_PATH_PATTERN = /^\/grupos\/([^/]+)\/hilos(?:\/([^/]+))?$/;
+
+/** Composición de un hilo (`/grupos/slug/hilos/nuevo`, ruta privada). */
+const GROUP_THREADS_NEW_PATH_PATTERN = /^\/grupos\/([^/]+)\/hilos\/nuevo$/;
 
 function decodeSegment(raw: string): string | null {
   try {
@@ -105,6 +112,17 @@ async function groupExists(slug: string): Promise<boolean> {
   }
 }
 
+async function threadExists(id: string): Promise<boolean> {
+  try {
+    const sql = neon(getEnv().DATABASE_URL);
+    const rows: unknown[] =
+      await sql`select 1 from thread where id = ${id} limit 1`;
+    return rows.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -162,6 +180,31 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  const threadsMatch = pathname.match(GROUP_THREADS_PATH_PATTERN);
+  if (threadsMatch) {
+    const groupSlug = decodeSegment(threadsMatch[1])?.trim() ?? "";
+    const rest = threadsMatch[2]
+      ? (decodeSegment(threadsMatch[2])?.trim() ?? "")
+      : null;
+
+    if (groupSlug.length === 0 || !(await groupExists(groupSlug))) {
+      return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+    }
+
+    if (rest === null) {
+      // Listado de hilos del grupo: público.
+      return NextResponse.next();
+    }
+    if (rest !== "nuevo") {
+      // Ficha del hilo: el id tiene que existir para responder 404 real.
+      if (rest.length === 0 || !(await threadExists(rest))) {
+        return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+      }
+      return NextResponse.next();
+    }
+    // `/hilos/nuevo` es privada: sigue al chequeo de sesión de abajo.
+  }
+
   if (pathname.startsWith("/@")) {
     const rest = pathname.slice(2);
 
@@ -184,13 +227,15 @@ export async function proxy(request: NextRequest) {
     pathname === "/bienvenida" ||
     pathname === "/explorar/lanas/proponer" ||
     pathname === "/explorar/patrones/proponer" ||
+    pathname === "/comunidad/preguntar" ||
     pathname === "/grupos/nuevo" ||
     pathname.startsWith("/mi-tejido") ||
     pathname.startsWith("/contador") ||
     pathname.startsWith("/configuracion") ||
     YARN_EDIT_PATH_PATTERN.test(pathname) ||
     PATTERN_EDIT_PATH_PATTERN.test(pathname) ||
-    GROUP_EDIT_PATH_PATTERN.test(pathname);
+    GROUP_EDIT_PATH_PATTERN.test(pathname) ||
+    GROUP_THREADS_NEW_PATH_PATTERN.test(pathname);
   if (!isPrivate) {
     return NextResponse.next();
   }
@@ -225,6 +270,9 @@ export const config = {
     "/explorar/patrones/proponer",
     "/grupos/:slug",
     "/grupos/:slug/editar",
+    "/grupos/:slug/hilos",
+    "/grupos/:slug/hilos/:thread",
     "/grupos/nuevo",
+    "/comunidad/preguntar",
   ],
 };

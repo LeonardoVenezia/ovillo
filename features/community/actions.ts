@@ -13,6 +13,7 @@ import { firstFreeSlug } from "@/lib/slug";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
+import { findMembership } from "./membership";
 import {
   canModerate,
   groupFormSchema,
@@ -41,18 +42,6 @@ export type CreateGroupResult =
 
 export type JoinGroupResult =
   { ok: true; status: GroupMemberStatus } | { ok: false; error: string };
-
-/** Membresía de una persona en un grupo, o `null` si no hay fila. */
-async function findMembership(groupId: string, userId: string) {
-  const [membership] = await getDb()
-    .select({ role: groupMember.role, status: groupMember.status })
-    .from(groupMember)
-    .where(
-      and(eq(groupMember.groupId, groupId), eq(groupMember.userId, userId)),
-    )
-    .limit(1);
-  return membership ?? null;
-}
 
 /** Crea un grupo y deja a quien lo llama como dueña/o. */
 export async function createGroup(

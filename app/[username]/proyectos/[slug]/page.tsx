@@ -1,7 +1,10 @@
+import { MessageCircle } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { Button } from "@/components/ui/button";
 import { USERNAME_PATTERN } from "@/features/auth/schemas";
 import { ProjectPublicCard } from "@/features/projects/components/project-public-card";
 import {
@@ -157,6 +160,17 @@ async function ViewerAwareProject({
           initialSavedItemId={saved?.id ?? null}
           signedIn={Boolean(viewer)}
         />
+        {viewer?.id === data.project.userId ? (
+          <Button variant="outline" asChild>
+            <Link
+              href={`/comunidad/preguntar?proyecto=${data.project.id}`}
+              data-testid="ask-help"
+            >
+              <MessageCircle aria-hidden="true" />
+              {es.community.askHelp.cta}
+            </Link>
+          </Button>
+        ) : null}
       </div>
     </>
   );

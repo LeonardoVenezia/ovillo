@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GroupJoinButton } from "@/features/community/components/group-join-button";
 import { GroupMembers } from "@/features/community/components/group-members";
 import { GroupPending } from "@/features/community/components/group-pending";
+import { ThreadCard } from "@/features/community/components/thread-card";
 import {
   categoryLabel,
   joinPolicyLabel,
@@ -21,6 +22,7 @@ import {
   listPendingMembers,
 } from "@/features/community/queries";
 import { canModerate, isGroupOwner } from "@/features/community/schemas";
+import { listThreads } from "@/features/community/thread-queries";
 import { getOptionalUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
@@ -29,8 +31,8 @@ import { es } from "@/messages/es";
  *
  * El proxy ya chequeó que exista (para poder responder 404 de verdad, D-023).
  * La ficha se lee al momento porque muestra el estado de quien mira: el botón
- * de unirse, las solicitudes pendientes (solo moderación) y la lista de
- * integrantes. Los hilos y respuestas llegan en el tramo 2 de la fase.
+ * de unirse, las solicitudes pendientes (solo moderación), los hilos
+ * recientes y la lista de integrantes.
  */
 
 type Props = PageProps<"/grupos/[slug]">;
@@ -63,9 +65,10 @@ async function GroupView({ slug }: { slug: string }) {
   }
 
   const moderates = canModerate(group.viewerRole);
-  const [members, pending] = await Promise.all([
+  const [members, pending, threads] = await Promise.all([
     listGroupMembers(group.id),
     moderates ? listPendingMembers(group.id) : Promise.resolve([]),
+    listThreads({ groupId: group.id, limit: 10 }),
   ]);
 
   const joinState = group.viewerRole
@@ -189,6 +192,46 @@ async function GroupView({ slug }: { slug: string }) {
           </p>
         </section>
       ) : null}
+
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-heading text-xl font-semibold">
+            {es.community.threadsTitle}
+          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            {group.viewerRole ? (
+              <Button size="sm" asChild>
+                <Link
+                  href={`/grupos/${group.slug}/hilos/nuevo`}
+                  data-testid="new-thread"
+                >
+                  {es.community.newThreadCta}
+                </Link>
+              </Button>
+            ) : null}
+            {threads.length > 0 ? (
+              <Link
+                href={`/grupos/${group.slug}/hilos`}
+                className="text-sm underline-offset-4 hover:underline"
+              >
+                {es.community.threadsViewAll}
+              </Link>
+            ) : null}
+          </div>
+        </div>
+
+        {threads.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {threads.map((thread) => (
+              <ThreadCard key={thread.id} thread={thread} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            {es.community.threadsEmpty}
+          </p>
+        )}
+      </section>
 
       {moderates && pending.length > 0 ? (
         <section className="flex flex-col gap-2">

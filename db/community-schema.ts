@@ -1,7 +1,10 @@
 import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
 import {
+  type AnyPgColumn,
+  boolean,
   index,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -11,13 +14,14 @@ import {
 
 import { user } from "./auth-schema";
 import { image } from "./media-schema";
+import { project } from "./project-schema";
 
 /**
- * Comunidad: grupos y membresías (spec §5.9 y tablas `group` / `group_member`
- * de §6). Los hilos, respuestas y KAL/CAL llegan en los próximos tramos de la
- * fase.
+ * Comunidad: grupos, membresías, hilos y respuestas (spec §5.9 y tablas
+ * `group` / `group_member` / `thread` / `post` de §6). Los KAL/CAL llegan en
+ * el próximo tramo de la fase.
  *
- * Decisiones (D-054):
+ * Decisiones (D-054 y D-055):
  * - El grupo tiene dueña/o (quien lo creó), moderadores y miembros; la
  *   membresía vive en `group_member` con `role` y `status`, PK compuesta
  *   (una fila por persona y grupo).
@@ -25,6 +29,11 @@ import { image } from "./media-schema";
  *   `aprobacion` (queda `pendiente` hasta que un moderador acepta).
  * - Los grupos se pueden editar pero no borrar todavía: el borrado lógico y
  *   la moderación llegan con el panel de la Fase 8 (D-054).
+ * - Los hilos tienen tipo (`pregunta`, `charla`, `muestro` y `anuncio`, este
+ *   último solo para moderación), se pueden fijar y cerrar, y una pregunta
+ *   puede marcarse con una respuesta solución (D-055).
+ * - `thread.project_id` acompaña el "Pedir ayuda" desde un proyecto (D-055):
+ *   la ficha del hilo muestra la tarjeta del proyecto con sus fotos y patrón.
  */
 
 export const GROUP_CATEGORIES = [
@@ -63,6 +72,25 @@ export const GROUP_RULES_MAX = 1000;
 
 /** Tope de grupos que puede crear una persona (guardia anti-spam liviana). */
 export const GROUP_LIMIT = 20;
+
+export const THREAD_TYPES = [
+  "pregunta",
+  "charla",
+  "muestro",
+  "anuncio",
+] as const;
+
+export type ThreadType = (typeof THREAD_TYPES)[number];
+
+export function isThreadType(value: string): value is ThreadType {
+  return (THREAD_TYPES as readonly string[]).includes(value);
+}
+
+export const THREAD_TITLE_MAX = 120;
+export const THREAD_BODY_MAX = 4000;
+export const POST_BODY_MAX = 4000;
+/** Fotos por hilo o respuesta (mismo tope que una entrada del diario). */
+export const THREAD_PHOTOS_MAX = 4;
 
 export const group = pgTable(
   "group",
@@ -129,6 +157,69 @@ export const groupMember = pgTable(
   ],
 );
 
+export const thread = pgTable(
+  "thread",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    groupId: text("group_id")
+      .notNull()
+      .references(() => group.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: text("type").$type<ThreadType>().notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    /** Fotos del hilo (ids de `image`, como en las entradas del diario). */
+    imageIds: jsonb("image_ids").$type<string[]>().notNull().default([]),
+    /** Proyecto que acompaña al hilo ("Pedir ayuda", spec §5.9). */
+    projectId: text("project_id").references(() => project.id, {
+      onDelete: "set null",
+    }),
+    pinned: boolean("pinned").notNull().default(false),
+    locked: boolean("locked").notNull().default(false),
+    /**
+     * Respuesta marcada como solución (solo en preguntas). La relación es
+     * circular con `post`, así que el tipo se resuelve tarde (`AnyPgColumn`).
+     */
+    solutionPostId: text("solution_post_id").references(
+      (): AnyPgColumn => post.id,
+      { onDelete: "set null" },
+    ),
+    /** Orden de la lista: lo último que pasó en el hilo. */
+    lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("thread_group_idx").on(table.groupId, table.lastActivityAt),
+    index("thread_author_idx").on(table.authorId, table.createdAt),
+  ],
+);
+
+export const post = pgTable(
+  "post",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    threadId: text("thread_id")
+      .notNull()
+      .references(() => thread.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    imageIds: jsonb("image_ids").$type<string[]>().notNull().default([]),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("post_thread_idx").on(table.threadId, table.createdAt),
+    index("post_author_idx").on(table.authorId, table.createdAt),
+  ],
+);
+
 export const groupRelations = relations(group, ({ one, many }) => ({
   creator: one(user, {
     fields: [group.createdBy],
@@ -139,6 +230,7 @@ export const groupRelations = relations(group, ({ one, many }) => ({
     references: [image.id],
   }),
   members: many(groupMember),
+  threads: many(thread),
 }));
 
 export const groupMemberRelations = relations(groupMember, ({ one }) => ({
@@ -148,6 +240,33 @@ export const groupMemberRelations = relations(groupMember, ({ one }) => ({
   }),
   user: one(user, {
     fields: [groupMember.userId],
+    references: [user.id],
+  }),
+}));
+
+export const threadRelations = relations(thread, ({ one, many }) => ({
+  group: one(group, {
+    fields: [thread.groupId],
+    references: [group.id],
+  }),
+  author: one(user, {
+    fields: [thread.authorId],
+    references: [user.id],
+  }),
+  project: one(project, {
+    fields: [thread.projectId],
+    references: [project.id],
+  }),
+  posts: many(post),
+}));
+
+export const postRelations = relations(post, ({ one }) => ({
+  thread: one(thread, {
+    fields: [post.threadId],
+    references: [thread.id],
+  }),
+  author: one(user, {
+    fields: [post.authorId],
     references: [user.id],
   }),
 }));

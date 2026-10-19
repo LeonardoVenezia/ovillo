@@ -24,7 +24,7 @@ export const MEDIA_LIMITS = {
   maxEdge: 4096,
 } as const;
 
-export const UPLOAD_PURPOSES = ["galeria", "entrada", "lana"] as const;
+export const UPLOAD_PURPOSES = ["galeria", "entrada", "lana", "hilo"] as const;
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
 
 export function isUploadPurpose(value: string): value is UploadPurpose {

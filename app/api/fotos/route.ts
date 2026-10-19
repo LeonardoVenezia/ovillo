@@ -21,9 +21,10 @@ import { deleteObject, putObject } from "@/storage";
  *
  * El navegador manda la foto ya comprimida (≤ 1600 px, JPEG) junto con su
  * miniatura; acá se aplican los topes duros antes de guardar en R2. Cada
- * imagen se sube de a una (la UI hace la cola). Hay dos destinos: el proyecto
- * (galería o entrada del diario) y el inventario de lana (una foto por lana,
- * D-046; si había otra, se reemplaza y se borra la anterior).
+ * imagen se sube de a una (la UI hace la cola). Hay tres destinos: el proyecto
+ * (galería o entrada del diario), el inventario de lana (una foto por lana,
+ * D-046; si había otra, se reemplaza y se borra la anterior) y los hilos de
+ * la comunidad (D-055; la foto se adjunta al guardar el hilo o la respuesta).
  */
 
 function errorResponse(error: UploadError, status = 400) {
@@ -87,6 +88,52 @@ export async function POST(request: Request) {
       { ok: false, error: es.projects.photos.errors.generic },
       { status: 400 },
     );
+  }
+
+  // Fotos de la comunidad (hilos y respuestas): sin destino previo, quedan a
+  // nombre de quien sube y se adjuntan al guardar el hilo o la respuesta.
+  if (purpose === "hilo") {
+    const check = checkImageUpload({
+      purpose,
+      mime: full.type,
+      fullBytes: full.size,
+      thumbBytes: thumb.size,
+      width,
+      height,
+    });
+    if (!check.ok) {
+      return errorResponse(check.error);
+    }
+
+    const imageId = createId();
+    const r2Key = `comunidad/${user.id}/${imageId}.jpg`;
+    await putObject(
+      r2Key,
+      new Uint8Array(await full.arrayBuffer()),
+      "image/jpeg",
+    );
+    await putObject(
+      thumbKeyFor(r2Key),
+      new Uint8Array(await thumb.arrayBuffer()),
+      "image/jpeg",
+    );
+
+    const [inserted] = await getDb()
+      .insert(image)
+      .values({
+        id: imageId,
+        ownerId: user.id,
+        r2Key,
+        width,
+        height,
+        altText:
+          typeof alt === "string" && alt.trim().length > 0
+            ? alt.trim().slice(0, 200)
+            : null,
+      })
+      .returning();
+
+    return NextResponse.json({ ok: true, photo: toPhotoView(inserted) });
   }
 
   // Foto del inventario: una sola por lana; si había, se reemplaza.

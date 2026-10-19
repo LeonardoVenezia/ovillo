@@ -7,7 +7,12 @@ import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GroupCard } from "@/features/community/components/group-card";
+import { ThreadCard } from "@/features/community/components/thread-card";
 import { listGroups, listUserGroups } from "@/features/community/queries";
+import {
+  listThreads,
+  listUnansweredQuestions,
+} from "@/features/community/thread-queries";
 import { getOptionalUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
@@ -17,9 +22,9 @@ export const metadata: Metadata = {
 
 /**
  * Comunidad (spec §5.9, `/comunidad`): los grupos propios (o la invitación a
- * sumarse) y una muestra de los grupos con más gente, con la puerta al
- * directorio completo. La sesión y los grupos se leen al momento dentro del
- * límite de `Suspense` (D-054).
+ * sumarse), lo último que pasó en los hilos, las preguntas que esperan
+ * respuesta y una muestra de los grupos con más gente. La sesión y los datos
+ * se leen al momento dentro del límite de `Suspense` (D-054).
  */
 export default function CommunityPage() {
   return (
@@ -47,9 +52,11 @@ export default function CommunityPage() {
 
 async function CommunityContent() {
   const user = await getOptionalUser();
-  const [myGroups, explore] = await Promise.all([
+  const [myGroups, explore, recent, unanswered] = await Promise.all([
     user ? listUserGroups(user.id) : Promise.resolve([]),
     listGroups({ viewerId: user?.id, limit: 6 }),
+    listThreads({ limit: 5 }),
+    listUnansweredQuestions(5),
   ]);
 
   return (
@@ -72,6 +79,40 @@ async function CommunityContent() {
           )}
         </section>
       ) : null}
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-heading text-xl font-semibold">
+          {es.community.threadsTitle}
+        </h2>
+        {recent.length > 0 ? (
+          <div className="flex flex-col gap-3" data-testid="recent-threads">
+            {recent.map((thread) => (
+              <ThreadCard key={thread.id} thread={thread} showGroup />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            {es.community.threadsEmpty}
+          </p>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-heading text-xl font-semibold">
+          {es.community.unansweredTitle}
+        </h2>
+        {unanswered.length > 0 ? (
+          <div className="flex flex-col gap-3" data-testid="unanswered-threads">
+            {unanswered.map((thread) => (
+              <ThreadCard key={thread.id} thread={thread} showGroup />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            {es.community.unansweredEmpty}
+          </p>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
