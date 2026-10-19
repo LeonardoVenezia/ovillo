@@ -14,16 +14,26 @@ import { suggestCatalogAmounts } from "../features/stash/schemas";
 import { deleteObject, putObject } from "../storage";
 import { account, user } from "./auth-schema";
 import {
+  event,
+  eventParticipant,
   group,
   groupMember,
   post,
   thread,
+  type EventCraft,
+  type EventStage,
   type GroupCategory,
   type JoinPolicy,
   type ThreadType,
 } from "./community-schema";
 import { rowCounter } from "./counter-schema";
 import { yearlyGoal } from "./goal-schema";
+import {
+  glossaryTerm,
+  type GlossaryCraft,
+  type GlossaryKind,
+  type GlossaryVariant,
+} from "./glossary-schema";
 import {
   projectTool,
   tool,
@@ -195,6 +205,40 @@ type ThreadPostSpec = {
   body: string;
   createdDaysAgo: number;
   photos?: PhotoSpec[];
+};
+
+type EventSpec = {
+  /** `slug` del grupo oficial (`OFFICIAL_GROUPS`). */
+  groupSlug: string;
+  /** `username` de quien organiza: tiene que moderar el grupo. */
+  organizer: string;
+  name: string;
+  craft: EventCraft;
+  /** Fechas relativas a hoy: negativo = ya pasó, positivo = falta. */
+  startsInDays: number;
+  endsInDays: number;
+  /** `slug` de patrones de la biblioteca (hasta 4). */
+  patternSlugs: string[];
+  description: string;
+  stages: EventStage[];
+  /** El hilo del evento se abre una semana antes de empezar. */
+  posts?: ThreadPostSpec[];
+  participants: {
+    username: string;
+    projectSlug: string;
+    joinedDaysAgo: number;
+  }[];
+};
+
+type GlossarySpec = {
+  slug: string;
+  term: string;
+  abbreviation: string;
+  english: string;
+  variants: GlossaryVariant[];
+  definition: string;
+  craft: GlossaryCraft;
+  kind: GlossaryKind;
 };
 
 type QueueSpec = {
@@ -637,7 +681,7 @@ const DEMO_USERS: UserSpec[] = [
     goalTargetProjects: 3,
     groups: [
       { slug: "amigurumis", role: "moderador" },
-      { slug: "crochet" },
+      { slug: "crochet", role: "moderador" },
       { slug: "charla-general" },
     ],
     projects: [
@@ -1273,6 +1317,651 @@ const THREADS: ThreadSpec[] = [
   },
 ];
 
+/** KAL/CAL demo (spec §5.10): uno en curso, uno terminado y uno por empezar. */
+const EVENTS: EventSpec[] = [
+  {
+    groupSlug: "dos-agujas",
+    organizer: "mariaruiz",
+    name: "KAL Sweater de otoño",
+    craft: "dos-agujas",
+    startsInDays: -10,
+    endsInDays: 11,
+    patternSlugs: ["cardigan-dreams"],
+    description:
+      "Nos acompañamos a tejer una prenda de abrigo: arrancamos con la muestra de tensión, seguimos por el canesú y llegamos al bloqueo con compañía. Subí tus avances y tus dudas en este hilo; en la biblioteca hay patrones que sirven de guía.",
+    stages: [
+      {
+        title: "Muestra y montaje",
+        note: "Tejer la muestra de tensión y montar los puntos de la talla elegida.",
+      },
+      {
+        title: "Canesú y mangas",
+        note: "Avanzar con el canesú, dividir las mangas y separar el cuerpo.",
+      },
+      {
+        title: "Terminación",
+        note: "Esconder las hebras, bloquear y estrenar.",
+      },
+    ],
+    posts: [
+      {
+        author: "mariaruiz",
+        body: "¡Bienvenidas! Yo voy por el canesú: suban sus avances y, si se traban con los aumentos, me escriben por acá que les doy una mano. 🧶",
+        createdDaysAgo: 10,
+      },
+      {
+        author: "lupitateje",
+        body: "Me sumé un poco tarde pero acá estoy: voy a terminar un chal que tenía a medias y después arranco con la muestra.",
+        createdDaysAgo: 7,
+      },
+    ],
+    participants: [
+      {
+        username: "mariaruiz",
+        projectSlug: "sweater-otono",
+        joinedDaysAgo: 10,
+      },
+      { username: "lupitateje", projectSlug: "chal-encaje", joinedDaysAgo: 7 },
+    ],
+  },
+  {
+    groupSlug: "crochet",
+    organizer: "candelateje",
+    name: "CAL Manta de grannys",
+    craft: "crochet",
+    startsInDays: -25,
+    endsInDays: -3,
+    patternSlugs: ["chaleco-granny-squares-team-invierno"],
+    description:
+      "Un clásico: tejemos cuadros de la abuela y los unimos en una manta. La idea era hacer dos cuadros por semana y compartir combinaciones de color; el hilo quedó abierto para los que siguen sumando cuadros.",
+    stages: [
+      {
+        title: "Cuadros y más cuadros",
+        note: "Tejer los cuadros y jugar con los colores.",
+      },
+      {
+        title: "Unión y borde",
+        note: "Unir los cuadros y hacer un borde a punto cangrejo.",
+      },
+    ],
+    posts: [
+      {
+        author: "candelateje",
+        body: "¡Arrancamos! Dejo un tip: si van a unir los cuadros al final, guarden una aguja un número más chica para el borde, queda más prolijo.",
+        createdDaysAgo: 25,
+      },
+      {
+        author: "solaguirre",
+        body: "Yo venía con la manta a medias y este CAL me dio el empujón para no abandonarla. ¡Gracias!",
+        createdDaysAgo: 8,
+      },
+    ],
+    participants: [
+      {
+        username: "candelateje",
+        projectSlug: "manta-granny",
+        joinedDaysAgo: 25,
+      },
+      {
+        username: "solaguirre",
+        projectSlug: "camperita-bebe",
+        joinedDaysAgo: 15,
+      },
+    ],
+  },
+  {
+    groupSlug: "amigurumis",
+    organizer: "candelateje",
+    name: "CAL Amigurumis de primavera",
+    craft: "crochet",
+    startsInDays: 6,
+    endsInDays: 20,
+    patternSlugs: ["oso-tono", "ranita-flor"],
+    description:
+      "Para el próximo CAL elegimos animalitos: hay un osito y una ranita en la biblioteca, así que cada quien teje el que más le guste. Arrancamos en unos días; mientras tanto, vayan eligiendo lana y contando a quién le van a regalar el suyo.",
+    stages: [
+      {
+        title: "Elegir y arrancar",
+        note: "Anillo mágico, puntos bajos y primeras vueltas.",
+      },
+      {
+        title: "Cuerpo y detalles",
+        note: "Relleno, orejas y carita.",
+      },
+      {
+        title: "Fotos finales",
+        note: "Compartir los animalitos terminados.",
+      },
+    ],
+    posts: [
+      {
+        author: "candelateje",
+        body: "¡Se viene el CAL de animalitos! Cuenten qué lana van a usar así nos inspiramos entre todas.",
+        createdDaysAgo: 2,
+      },
+      {
+        author: "lupitateje",
+        body: "Yo me anoto con el osito: tengo una lana marrón en el inventario que pide a gritos ser un oso. 🐻",
+        createdDaysAgo: 1,
+      },
+    ],
+    participants: [],
+  },
+];
+
+/**
+ * Glosario demo (spec §5.14): el contenido base de Ovillo. Los términos están
+ * ordenados a mano por bloque para leerlos cómodos; la página los ordena
+ * alfabéticamente con criterio en español.
+ */
+const GLOSSARY: GlossarySpec[] = [
+  // -------------------------------------------------------------------------
+  // Dos agujas: puntos
+  // -------------------------------------------------------------------------
+  {
+    slug: "punto-derecho",
+    term: "Punto derecho",
+    abbreviation: "pd",
+    english: "knit (k)",
+    variants: [{ country: "España", name: "punto del derecho" }],
+    definition:
+      "El punto base de las dos agujas: se engancha la hebra por delante de la aguja y se saca el punto nuevo del derecho. Todo tejido arranca y termina acá.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "punto-reves",
+    term: "Punto revés",
+    abbreviation: "pr",
+    english: "purl (p)",
+    variants: [{ country: "España", name: "punto del revés" }],
+    definition:
+      "El hermano del derecho: la aguja pasa por delante y la hebra queda por delante de la labor. Es el que le da textura a los elásticos y al arroz.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "punto-jersey",
+    term: "Punto jersey",
+    abbreviation: "",
+    english: "stockinette stitch",
+    variants: [
+      { country: "España", name: "punto liso" },
+      { country: "España", name: "punto de media" },
+    ],
+    definition:
+      "Tejiendo plano es una hilera al derecho y una al revés; tejiendo en redondo, todas al derecho. Queda liso de un lado y con rayitas del otro.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "jersey-al-reves",
+    term: "Jersey al revés",
+    abbreviation: "",
+    english: "reverse stockinette stitch",
+    variants: [],
+    definition:
+      "El jersey dado vuelta: una hilera al revés y una al derecho tejiendo plano. La cara linda (la de las rayitas) queda para afuera.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "punto-bobo",
+    term: "Punto bobo",
+    abbreviation: "",
+    english: "garter stitch",
+    variants: [{ country: "Argentina", name: "punto Santa Clara" }],
+    definition:
+      "Todas las hileras al derecho. No se enrosca, queda esponjoso y es el primer punto que casi todas aprendimos.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "punto-arroz",
+    term: "Punto arroz",
+    abbreviation: "",
+    english: "seed stitch",
+    variants: [],
+    definition:
+      "Se alternan derecho y revés punto por punto, y en la hilera siguiente se teje al revés lo que venía al derecho. Queda una textura de puntitos pareja de los dos lados.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "punto-elastico",
+    term: "Punto elástico",
+    abbreviation: "",
+    english: "rib stitch",
+    variants: [{ country: "México", name: "punto de costilla" }],
+    definition:
+      "Se repiten columnas de derecho y revés (1x1, 2x2…). Estira y vuelve, por eso se usa en puños, cinturas y cuellos.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "punto-calado",
+    term: "Punto calado",
+    abbreviation: "",
+    english: "lace",
+    variants: [],
+    definition:
+      "Punto con agujeritos hechos con lazadas y disminuciones que las compensan. Es el que da ese aire liviano a chales y blusas.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "trenza",
+    term: "Trenza",
+    abbreviation: "",
+    english: "cable",
+    variants: [],
+    definition:
+      "Se cruzan grupos de puntos con una aguja auxiliar por delante o por detrás. Se ve difícil pero son solo cruces cada tantas hileras.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "punto-ingles",
+    term: "Punto inglés",
+    abbreviation: "",
+    english: "brioche stitch",
+    variants: [],
+    definition:
+      "Tejido esponjoso y grueso: en cada hilera se teje el punto de la hilera anterior junto con su lazada. Ideal para cuellos y bufandas bien abrigadas.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "dos-puntos-juntos",
+    term: "Dos puntos juntos",
+    abbreviation: "2 pj",
+    english: "knit two together (k2tog)",
+    variants: [],
+    definition:
+      "La disminución más simple: se tejen dos puntos como si fueran uno. Inclina el tejido hacia la derecha.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "disminucion-simple",
+    term: "Disminución simple",
+    abbreviation: "ss",
+    english: "slip, slip, knit (ssk)",
+    variants: [{ country: "España", name: "surjete simple" }],
+    definition:
+      "Se pasa un punto sin tejer, se teje el siguiente y se pasa el primero sobre el segundo. Es la disminución que inclina hacia la izquierda.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  {
+    slug: "lazada",
+    term: "Lazada",
+    abbreviation: "laz",
+    english: "yarn over (yo)",
+    variants: [{ country: "España", name: "hebra" }],
+    definition:
+      "Se pasa la hebra por encima de la aguja sin tejer: en la hilera siguiente queda un punto de más, que es un agujerito decorativo o un aumento.",
+    craft: "dos-agujas",
+    kind: "punto",
+  },
+  // -------------------------------------------------------------------------
+  // Dos agujas: técnicas
+  // -------------------------------------------------------------------------
+  {
+    slug: "montar-puntos",
+    term: "Montar puntos",
+    abbreviation: "mont",
+    english: "cast on (CO)",
+    variants: [{ country: "México", name: "echar puntos" }],
+    definition:
+      "El primer paso de todo proyecto: armar los puntos iniciales sobre la aguja. El montaje simple alcanza para casi todo.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "rematar",
+    term: "Rematar",
+    abbreviation: "rem",
+    english: "bind off (BO)",
+    variants: [{ country: "España", name: "cerrar los puntos" }],
+    definition:
+      "Cerrar los puntos al terminar una pieza: se tejen dos, se pasa el primero sobre el segundo y se sigue hasta que no queda ninguno.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "hilera",
+    term: "Hilera",
+    abbreviation: "hil",
+    english: "row",
+    variants: [{ country: "España", name: "pasada" }],
+    definition:
+      "Cada línea de puntos que se teje de una punta a la otra, yendo y viniendo. En los patrones: «tejer 4 hileras al derecho».",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "muestra-de-tension",
+    term: "Muestra de tensión",
+    abbreviation: "",
+    english: "gauge swatch",
+    variants: [{ country: "España", name: "tensión del tejido" }],
+    definition:
+      "Un cuadradito de 10×10 cm que se teje antes de empezar: si los puntos y las hileras coinciden con los del patrón, la prenda sale de la talla.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "levantar-puntos",
+    term: "Levantar puntos",
+    abbreviation: "lev",
+    english: "pick up stitches",
+    variants: [],
+    definition:
+      "Recoger puntos del borde de una pieza ya tejida (por ejemplo, para un cuello o una abertura) y seguir tejiendo desde ahí.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "canesu",
+    term: "Canesú",
+    abbreviation: "",
+    english: "yoke",
+    variants: [],
+    definition:
+      "La parte de arriba de un sweater que une hombros, cuello y mangas antes de separar el cuerpo. Puede ser redondo o en raglán.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "raglan",
+    term: "Raglán",
+    abbreviation: "",
+    english: "raglan",
+    variants: [],
+    definition:
+      "Tipo de construcción con cuatro líneas de aumentos que bajan en diagonal desde el cuello hasta la axila, separando mangas y cuerpo.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "remallado",
+    term: "Remallado",
+    abbreviation: "",
+    english: "grafting (Kitchener stitch)",
+    variants: [],
+    definition:
+      "Unir dos bordes vivos punto por punto con una aguja de coser, imitando el tejido. Se usa en las punteras de las medias para que no se sienta la costura.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "aumento",
+    term: "Aumento",
+    abbreviation: "aum",
+    english: "increase (inc)",
+    variants: [],
+    definition:
+      "Sumar un punto para ensanchar el tejido: con una lazada, tejiendo dos veces el mismo punto o levantando la hebra entre dos puntos.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "sisas",
+    term: "Sisas",
+    abbreviation: "",
+    english: "armhole",
+    variants: [],
+    definition:
+      "La abertura donde entra la manga. En los patrones suele decir «disminuir para las sisas» justo después de terminar el canesú.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "escote",
+    term: "Escote",
+    abbreviation: "",
+    english: "neckline",
+    variants: [],
+    definition:
+      "La abertura del cuello. Puede ser redondo, en V o cuadrado, y casi siempre se termina con un elástico para que no se deforme.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  {
+    slug: "delantero-y-espalda",
+    term: "Delantero y espalda",
+    abbreviation: "",
+    english: "front and back",
+    variants: [],
+    definition:
+      "Las dos piezas grandes de un sweater tejido plano: la espalda y el frente, que después se cosen en los hombros y los costados.",
+    craft: "dos-agujas",
+    kind: "tecnica",
+  },
+  // -------------------------------------------------------------------------
+  // Comunes a las dos técnicas
+  // -------------------------------------------------------------------------
+  {
+    slug: "tejer-en-redondo",
+    term: "Tejer en redondo",
+    abbreviation: "",
+    english: "knit in the round",
+    variants: [{ country: "España", name: "tejer en circular" }],
+    definition:
+      "Tejer en círculo con agujas circulares o de doble punta: no hay costuras y el derecho del tejido queda siempre del mismo lado.",
+    craft: "ambos",
+    kind: "tecnica",
+  },
+  {
+    slug: "vuelta",
+    term: "Vuelta",
+    abbreviation: "vta",
+    english: "round",
+    variants: [],
+    definition:
+      "Cada línea completa cuando se teje en redondo a dos agujas o a crochet. En los patrones: «repetir la vuelta 6 veces».",
+    craft: "ambos",
+    kind: "tecnica",
+  },
+  {
+    slug: "esconder-hebras",
+    term: "Esconder las hebras",
+    abbreviation: "",
+    english: "weave in ends",
+    variants: [],
+    definition:
+      "Pasar los hilitos que sobraron entre los puntos del revés con una aguja lanera, para que no se vean ni se suelten al lavar.",
+    craft: "ambos",
+    kind: "tecnica",
+  },
+  {
+    slug: "bloqueo",
+    term: "Bloqueo",
+    abbreviation: "",
+    english: "blocking",
+    variants: [],
+    definition:
+      "Humectar la prenda terminada y estirarla con alfileres hasta su forma final. Asienta los puntos parejos y salva mil diferencias de tensión.",
+    craft: "ambos",
+    kind: "tecnica",
+  },
+  {
+    slug: "cambio-de-color",
+    term: "Cambio de color",
+    abbreviation: "",
+    english: "color change",
+    variants: [],
+    definition:
+      "Introducir una lana nueva en el último paso del último punto del color viejo, para que el cambio quede prolijo y sin agujeros.",
+    craft: "ambos",
+    kind: "tecnica",
+  },
+  {
+    slug: "derecho-del-tejido",
+    term: "Derecho del tejido",
+    abbreviation: "LD",
+    english: "right side (RS)",
+    variants: [],
+    definition:
+      "La cara de la prenda que se ve cuando la usás. Los patrones marcan si una hilera se teje por el derecho (LD) o por el revés (LR).",
+    craft: "ambos",
+    kind: "tecnica",
+  },
+  {
+    slug: "reves-del-tejido",
+    term: "Revés del tejido",
+    abbreviation: "LR",
+    english: "wrong side (WS)",
+    variants: [],
+    definition:
+      "La cara interna, la que queda contra el cuerpo. Suelen verse las hebras y los nudos; ahí es donde se esconden los hilitos.",
+    craft: "ambos",
+    kind: "tecnica",
+  },
+  // -------------------------------------------------------------------------
+  // Crochet: puntos
+  // -------------------------------------------------------------------------
+  {
+    slug: "cadena",
+    term: "Cadena",
+    abbreviation: "cad",
+    english: "chain (ch)",
+    variants: [{ country: "España", name: "cadeneta" }],
+    definition:
+      "El punto más liviano: se engancha la hebra y se pasa por el bucle. Sirve para arrancar, para subir de vuelta y para calar.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  {
+    slug: "punto-enano",
+    term: "Punto enano",
+    abbreviation: "pe",
+    english: "slip stitch (sl st)",
+    variants: [{ country: "México", name: "punto raso" }],
+    definition:
+      "Se engancha, se saca una lazada y se pasa directo por el bucle: queda casi plano. Se usa para cerrar vueltas, unir piezas o bordes firmes.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  {
+    slug: "punto-bajo",
+    term: "Punto bajo",
+    abbreviation: "pb",
+    english: "single crochet (sc)",
+    variants: [],
+    definition:
+      "El punto básico del crochet: se engancha en el punto de abajo, se saca una lazada y se cierran las dos del gancho. Es el punto de los amigurumis.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  {
+    slug: "medio-punto",
+    term: "Medio punto",
+    abbreviation: "mp",
+    english: "half double crochet (hdc)",
+    variants: [],
+    definition:
+      "Como el punto bajo pero pasando la hebra una vez de más por el medio: queda más alto y más suelto. Justo entre el pb y el pa.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  {
+    slug: "punto-alto",
+    term: "Punto alto",
+    abbreviation: "pa",
+    english: "double crochet (dc)",
+    variants: [
+      { country: "Argentina", name: "vareta" },
+      { country: "Uruguay", name: "vareta" },
+    ],
+    definition:
+      "Lleva una lazada extra al empezar y se cierra en dos pasos: por eso es más alto y avanza rápido. Es el punto estrella de las mantas.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  {
+    slug: "vareta-doble",
+    term: "Vareta doble",
+    abbreviation: "vd",
+    english: "treble crochet (tr)",
+    variants: [{ country: "España", name: "punto alto doble" }],
+    definition:
+      "Dos lazadas al empezar y se cierra en tres pasos; queda más alta y suelta que la vareta. Se usa en calados y puntos fantasía.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  {
+    slug: "punto-puff",
+    term: "Punto puff",
+    abbreviation: "",
+    english: "puff stitch",
+    variants: [],
+    definition:
+      "Se enganchan varias lazadas juntas en el mismo punto y se cierran todas de una: queda una bolita esponjosa. Si queda suelta, cerrar con tensión firme en el último paso.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  {
+    slug: "cuadro-de-la-abuela",
+    term: "Cuadro de la abuela",
+    abbreviation: "",
+    english: "granny square",
+    variants: [{ country: "España", name: "cuadrado de la abuela" }],
+    definition:
+      "El clásico cuadrado tejido desde el centro hacia afuera, en colores y vueltas concéntricas. Es el ladrillo de las mantas de crochet.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  {
+    slug: "punto-cangrejo",
+    term: "Punto cangrejo",
+    abbreviation: "",
+    english: "crab stitch",
+    variants: [],
+    definition:
+      "Un punto bajo tejido «para atrás», en el sentido contrario al trabajo. Da un borde firme y decorativo: el remate ideal de mantas y caminos de mesa.",
+    craft: "crochet",
+    kind: "punto",
+  },
+  // -------------------------------------------------------------------------
+  // Crochet: técnicas
+  // -------------------------------------------------------------------------
+  {
+    slug: "anillo-magico",
+    term: "Anillo mágico",
+    abbreviation: "am",
+    english: "magic ring (MR)",
+    variants: [{ country: "México", name: "aro deslizable" }],
+    definition:
+      "Un círculo que se cierra apretando la hebra, sin agujero en el centro. Así arrancan los amigurumis para que no quede el huequito.",
+    craft: "crochet",
+    kind: "tecnica",
+  },
+  {
+    slug: "tejer-en-espiral",
+    term: "Tejer en espiral",
+    abbreviation: "",
+    english: "continuous rounds",
+    variants: [],
+    definition:
+      "Seguir de largo sin cerrar cada vuelta, moviendo un marcador cada vez. Deja los amigurumis sin costura visible.",
+    craft: "crochet",
+    kind: "tecnica",
+  },
+  {
+    slug: "amigurumi",
+    term: "Amigurumi",
+    abbreviation: "",
+    english: "amigurumi",
+    variants: [],
+    definition:
+      "Muñequitos tejidos a crochet en punto bajo y en espiral, primero el cuerpo y después los detalles. Se rellenan con guata y se borda la carita.",
+    craft: "crochet",
+    kind: "tecnica",
+  },
+];
+
 // ---------------------------------------------------------------------------
 // Fechas
 // ---------------------------------------------------------------------------
@@ -1283,6 +1972,13 @@ function daysAgoDate(days: number): Date {
 
 function dateString(days: number): string {
   return daysAgoDate(days).toISOString().slice(0, 10);
+}
+
+/** Fecha de calendario relativa a hoy: negativo = ya pasó, positivo = falta. */
+function dayString(daysFromNow: number): string {
+  return new Date(Date.now() + daysFromNow * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 // ---------------------------------------------------------------------------
@@ -1472,6 +2168,9 @@ async function removeDemoData(): Promise<void> {
   }
 
   await db.delete(user).where(like(user.email, DEMO_EMAIL_PATTERN));
+  // El glosario es contenido de Ovillo (no de las cuentas demo) y hoy sale
+  // entero del seed: se re-crea al volver a sembrar (D-057).
+  await db.delete(glossaryTerm);
   console.log(`Cuentas demo borradas: ${demoUsers.length}.`);
 }
 
@@ -1988,6 +2687,9 @@ async function seedCommunity(users: Map<string, string>): Promise<void> {
   let membershipCount = 0;
   let threadCount = 0;
   let postCount = 0;
+  let eventCount = 0;
+  let eventParticipantCount = 0;
+  let eventPostCount = 0;
 
   try {
     const groupIds = new Map<string, string>();
@@ -2156,6 +2858,11 @@ async function seedCommunity(users: Map<string, string>): Promise<void> {
 
       threadCount += 1;
     }
+
+    const eventStats = await seedEvents(users, groupIds);
+    eventCount = eventStats.events;
+    eventParticipantCount = eventStats.participants;
+    eventPostCount = eventStats.posts;
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
@@ -2163,6 +2870,160 @@ async function seedCommunity(users: Map<string, string>): Promise<void> {
   console.log(
     `  ✓ comunidad — ${OFFICIAL_GROUPS.length} grupo(s) oficiales, ${membershipCount} membresía(s), ${threadCount} hilo(s) y ${postCount} respuesta(s)`,
   );
+  console.log(
+    `  ✓ KAL/CAL — ${eventCount} evento(s), ${eventParticipantCount} participación(es) y ${eventPostCount} respuesta(s)`,
+  );
+}
+
+/** KAL/CAL demo: cada evento abre su hilo propio y suma participantes (D-056). */
+async function seedEvents(
+  users: Map<string, string>,
+  groupIds: Map<string, string>,
+): Promise<{ events: number; participants: number; posts: number }> {
+  const db = getDb();
+  let events = 0;
+  let participants = 0;
+  let posts = 0;
+
+  for (const spec of EVENTS) {
+    const groupId = groupIds.get(spec.groupSlug);
+    const organizerId = users.get(spec.organizer);
+    if (!groupId || !organizerId) {
+      console.warn(
+        `  Aviso: no se pudo sembrar el KAL/CAL "${spec.name}" (grupo o cuenta faltante).`,
+      );
+      continue;
+    }
+
+    const patternRows =
+      spec.patternSlugs.length > 0
+        ? await db
+            .select({ id: pattern.id, slug: pattern.slug })
+            .from(pattern)
+            .where(inArray(pattern.slug, spec.patternSlugs))
+        : [];
+    const patternIds = spec.patternSlugs
+      .map((slug) => patternRows.find((row) => row.slug === slug)?.id)
+      .filter((id): id is string => id !== undefined);
+
+    // El hilo se abre una semana antes de empezar (y como mínimo, ayer).
+    const announcedDaysAgo = Math.max(2, 7 - spec.startsInDays);
+    const createdAt = daysAgoDate(announcedDaysAgo);
+    const threadId = createId();
+    const eventId = createId();
+
+    await db.insert(thread).values({
+      id: threadId,
+      groupId,
+      authorId: organizerId,
+      type: "charla",
+      title: spec.name,
+      body: spec.description,
+      imageIds: [],
+      lastActivityAt: createdAt,
+      createdAt,
+    });
+
+    await db.insert(event).values({
+      id: eventId,
+      groupId,
+      threadId,
+      createdBy: organizerId,
+      name: spec.name,
+      craft: spec.craft,
+      startsAt: dayString(spec.startsInDays),
+      endsAt: dayString(spec.endsInDays),
+      patternIds,
+      stages: spec.stages,
+      createdAt,
+      updatedAt: createdAt,
+    });
+
+    let lastActivityAt = createdAt;
+    for (const postSpec of spec.posts ?? []) {
+      const postAuthorId = users.get(postSpec.author);
+      if (!postAuthorId) {
+        continue;
+      }
+      const postCreatedAt = daysAgoDate(postSpec.createdDaysAgo);
+      await db.insert(post).values({
+        threadId,
+        authorId: postAuthorId,
+        body: postSpec.body,
+        imageIds: [],
+        createdAt: postCreatedAt,
+      });
+      posts += 1;
+      if (postCreatedAt > lastActivityAt) {
+        lastActivityAt = postCreatedAt;
+      }
+    }
+    if (lastActivityAt > createdAt) {
+      await db
+        .update(thread)
+        .set({ lastActivityAt })
+        .where(eq(thread.id, threadId));
+    }
+
+    for (const participant of spec.participants) {
+      const userId = users.get(participant.username);
+      if (!userId) {
+        continue;
+      }
+      const [ownProject] = await db
+        .select({ id: project.id })
+        .from(project)
+        .where(
+          and(
+            eq(project.userId, userId),
+            eq(project.slug, participant.projectSlug),
+            isNull(project.deletedAt),
+          ),
+        )
+        .limit(1);
+      if (!ownProject) {
+        console.warn(
+          `  Aviso: ${participant.username} no tiene el proyecto "${participant.projectSlug}" para el KAL/CAL "${spec.name}".`,
+        );
+        continue;
+      }
+      const joinedAt = daysAgoDate(participant.joinedDaysAgo);
+      await db.insert(eventParticipant).values({
+        eventId,
+        userId,
+        projectId: ownProject.id,
+        createdAt: joinedAt,
+        updatedAt: joinedAt,
+      });
+      participants += 1;
+    }
+
+    events += 1;
+  }
+
+  return { events, participants, posts };
+}
+
+/**
+ * El glosario base (spec §5.14): es contenido de Ovillo, no de las cuentas
+ * demo, así que `created_by` queda vacío. La edición por moderación llega
+ * con el panel de la Fase 8 (D-057).
+ */
+async function seedGlossary(): Promise<void> {
+  const db = getDb();
+  await db.insert(glossaryTerm).values(
+    GLOSSARY.map((spec) => ({
+      slug: spec.slug,
+      term: spec.term,
+      abbreviation: spec.abbreviation,
+      english: spec.english,
+      variants: spec.variants,
+      definition: spec.definition,
+      craft: spec.craft,
+      kind: spec.kind,
+    })),
+  );
+  console.log(`  ✓ glosario — ${GLOSSARY.length} término(s)`);
 }
 
 async function main(): Promise<void> {
@@ -2193,6 +3054,10 @@ async function main(): Promise<void> {
   await seedCommunity(userIds);
 
   console.log("");
+  console.log("Sembrando el glosario…");
+  await seedGlossary();
+
+  console.log("");
   console.log(`Listo. Cuentas demo (contraseña compartida: ${DEMO_PASSWORD}):`);
   for (const spec of DEMO_USERS) {
     console.log(`  @${spec.username} — ${spec.name}`);
@@ -2215,6 +3080,12 @@ async function main(): Promise<void> {
   );
   console.log(
     "  Hilos: 7 hilos y 8 respuestas (charla, muestra con foto, pregunta resuelta y una sin responder); /grupos/ayuda-para-principiantes/hilos muestra el «Pedir ayuda» con el sweater de @mariaruiz.",
+  );
+  console.log(
+    "  KAL/CAL: 3 eventos (uno en curso con 2 participantes, uno terminado y uno por empezar); /grupos/dos-agujas/eventos muestra el KAL de otoño de @mariaruiz.",
+  );
+  console.log(
+    "  Glosario: /glosario tiene 44 términos; probá buscar «liso» o «2 pj» y filtrar por técnica.",
   );
 }
 

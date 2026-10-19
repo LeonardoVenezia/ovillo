@@ -1,10 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { repliesLabel, whenLabel } from "./format";
+import {
+  eventCraftLabel,
+  eventDatesLabel,
+  eventFinishedLabel,
+  eventParticipantsLabel,
+  eventStageLabel,
+  eventStatusLabel,
+  repliesLabel,
+  whenLabel,
+} from "./format";
 import {
   canCreateThreadType,
   canMarkSolution,
   canModerate,
+  canOrganizeEvent,
+  eventFormSchema,
+  eventStatus,
   groupFormSchema,
   groupSlug,
   isGroupOwner,
@@ -262,5 +274,125 @@ describe("repliesLabel", () => {
     expect(repliesLabel(0)).toBe("Todavía sin respuestas");
     expect(repliesLabel(1)).toBe("1 respuesta");
     expect(repliesLabel(4)).toBe("4 respuestas");
+  });
+});
+
+describe("eventStatus", () => {
+  const today = "2026-10-19";
+
+  it("deriva próximo, en curso y terminado de las fechas", () => {
+    expect(eventStatus("2026-11-01", "2026-11-20", today)).toBe("proximo");
+    expect(eventStatus("2026-10-01", "2026-10-25", today)).toBe("en-curso");
+    expect(eventStatus("2026-09-01", "2026-09-30", today)).toBe("terminado");
+  });
+
+  it("los bordes cuentan como en curso", () => {
+    expect(eventStatus("2026-10-19", "2026-10-19", today)).toBe("en-curso");
+    expect(eventStatus("2026-10-19", "2026-11-01", today)).toBe("en-curso");
+    expect(eventStatus("2026-09-01", "2026-10-19", today)).toBe("en-curso");
+  });
+});
+
+describe("canOrganizeEvent", () => {
+  it("los KAL/CAL los organiza solo la moderación (D-056)", () => {
+    expect(canOrganizeEvent("dueno")).toBe(true);
+    expect(canOrganizeEvent("moderador")).toBe(true);
+    expect(canOrganizeEvent("miembro")).toBe(false);
+    expect(canOrganizeEvent(null)).toBe(false);
+  });
+});
+
+describe("eventFormSchema", () => {
+  const valid = {
+    name: "KAL Sweater de otoño",
+    craft: "dos-agujas",
+    startsAt: "2026-10-10",
+    endsAt: "2026-11-10",
+    description: "Tejemos juntas una prenda de abrigo.",
+    patternIds: ["p1"],
+    stages: [{ title: "Montar y elástico", note: "" }],
+  };
+
+  it("acepta un KAL/CAL completo y recorta el nombre", () => {
+    const parsed = eventFormSchema.safeParse({ ...valid, name: "  KAL  " });
+    expect(parsed.success && parsed.data.name).toBe("KAL");
+  });
+
+  it("exige nombre, fechas válidas y técnica conocida", () => {
+    expect(eventFormSchema.safeParse({ ...valid, name: "   " }).success).toBe(
+      false,
+    );
+    expect(
+      eventFormSchema.safeParse({ ...valid, startsAt: "10/10/2026" }).success,
+    ).toBe(false);
+    expect(eventFormSchema.safeParse({ ...valid, endsAt: "" }).success).toBe(
+      false,
+    );
+    expect(
+      eventFormSchema.safeParse({ ...valid, craft: "telar" }).success,
+    ).toBe(false);
+  });
+
+  it("frena la fecha de fin anterior a la de inicio", () => {
+    const parsed = eventFormSchema.safeParse({
+      ...valid,
+      startsAt: "2026-11-10",
+      endsAt: "2026-10-10",
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("limita patrones y etapas", () => {
+    expect(
+      eventFormSchema.safeParse({
+        ...valid,
+        patternIds: ["1", "2", "3", "4", "5"],
+      }).success,
+    ).toBe(false);
+    expect(
+      eventFormSchema.safeParse({
+        ...valid,
+        stages: Array.from({ length: 9 }, () => ({ title: "Etapa", note: "" })),
+      }).success,
+    ).toBe(false);
+    expect(
+      eventFormSchema.safeParse({
+        ...valid,
+        stages: [{ title: "   ", note: "" }],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("etiquetas de los KAL/CAL", () => {
+  it("traduce la técnica a KAL o CAL", () => {
+    expect(eventCraftLabel("dos-agujas")).toBe("KAL");
+    expect(eventCraftLabel("crochet")).toBe("CAL");
+  });
+
+  it("nombra los estados", () => {
+    expect(eventStatusLabel("proximo")).toBe("Próximo");
+    expect(eventStatusLabel("en-curso")).toBe("En curso");
+    expect(eventStatusLabel("terminado")).toBe("Terminado");
+  });
+
+  it("numera las etapas y cuenta participantes y finales", () => {
+    expect(eventStageLabel(0)).toBe("Etapa 1");
+    expect(eventStageLabel(4)).toBe("Etapa 5");
+    expect(eventParticipantsLabel(1)).toBe("1 participante");
+    expect(eventParticipantsLabel(3)).toBe("3 participantes");
+    expect(eventFinishedLabel(1, 2)).toBe("1 de 2 terminaron");
+  });
+
+  it("arma el rango de fechas en un mismo mes, entre meses y entre años", () => {
+    expect(eventDatesLabel("2026-10-05", "2026-10-25")).toBe(
+      "Del 5 al 25 de octubre de 2026",
+    );
+    expect(eventDatesLabel("2026-09-28", "2026-10-12")).toBe(
+      "Del 28 de septiembre al 12 de octubre de 2026",
+    );
+    expect(eventDatesLabel("2026-12-28", "2027-01-12")).toBe(
+      "Del 28 de diciembre de 2026 al 12 de enero de 2027",
+    );
   });
 });

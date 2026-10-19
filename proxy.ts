@@ -10,11 +10,12 @@ import { getEnv } from "@/lib/env";
  *
  * - Perfiles `/@usuario`, proyectos `/@usuario/proyectos/slug`, lanas
  *   (`/lanas/marca/slug`), patrones (`/patrones/slug`), grupos
- *   (`/grupos/slug`) e hilos (`/grupos/slug/hilos/id`): chequea que existan
- *   y, si no, reescribe a la ruta de 404. Hace falta acá porque el caparazón
- *   PPR de las rutas dinámicas se sirve con estado 200 y `notFound()` ya no
- *   puede cambiarlo (ver D-023 y D-031). Ante errores de base se deja pasar:
- *   la página decide.
+ *   (`/grupos/slug`), hilos (`/grupos/slug/hilos/id`) y KAL/CAL
+ *   (`/grupos/slug/eventos/id`): chequea que existan y, si no, reescribe a
+ *   la ruta de 404. Hace falta acá porque el caparazón PPR de las rutas
+ *   dinámicas se sirve con estado 200 y `notFound()` ya no puede cambiarlo
+ *   (ver D-023 y D-031). Ante errores de base se deja pasar: la página
+ *   decide.
  * - Rutas privadas: redirección optimista si falta la cookie de sesión; la
  *   validación real (contra la base) la hace cada página con `requireUser()`.
  */
@@ -45,6 +46,16 @@ const GROUP_THREADS_PATH_PATTERN = /^\/grupos\/([^/]+)\/hilos(?:\/([^/]+))?$/;
 
 /** Composición de un hilo (`/grupos/slug/hilos/nuevo`, ruta privada). */
 const GROUP_THREADS_NEW_PATH_PATTERN = /^\/grupos\/([^/]+)\/hilos\/nuevo$/;
+
+/** KAL/CAL de un grupo: listado y ficha (`/grupos/slug/eventos[...]`). */
+const GROUP_EVENTS_PATH_PATTERN = /^\/grupos\/([^/]+)\/eventos(?:\/([^/]+))?$/;
+
+/** Composición de un KAL/CAL (`/grupos/slug/eventos/nuevo`, ruta privada). */
+const GROUP_EVENTS_NEW_PATH_PATTERN = /^\/grupos\/([^/]+)\/eventos\/nuevo$/;
+
+/** Edición de un KAL/CAL (`/grupos/slug/eventos/id/editar`, ruta privada). */
+const GROUP_EVENTS_EDIT_PATH_PATTERN =
+  /^\/grupos\/([^/]+)\/eventos\/([^/]+)\/editar$/;
 
 function decodeSegment(raw: string): string | null {
   try {
@@ -117,6 +128,17 @@ async function threadExists(id: string): Promise<boolean> {
     const sql = neon(getEnv().DATABASE_URL);
     const rows: unknown[] =
       await sql`select 1 from thread where id = ${id} limit 1`;
+    return rows.length > 0;
+  } catch {
+    return true;
+  }
+}
+
+async function eventExists(id: string): Promise<boolean> {
+  try {
+    const sql = neon(getEnv().DATABASE_URL);
+    const rows: unknown[] =
+      await sql`select 1 from "event" where id = ${id} limit 1`;
     return rows.length > 0;
   } catch {
     return true;
@@ -205,6 +227,47 @@ export async function proxy(request: NextRequest) {
     // `/hilos/nuevo` es privada: sigue al chequeo de sesión de abajo.
   }
 
+  const eventsMatch = pathname.match(GROUP_EVENTS_PATH_PATTERN);
+  if (eventsMatch) {
+    const groupSlug = decodeSegment(eventsMatch[1])?.trim() ?? "";
+    const rest = eventsMatch[2]
+      ? (decodeSegment(eventsMatch[2])?.trim() ?? "")
+      : null;
+
+    if (groupSlug.length === 0 || !(await groupExists(groupSlug))) {
+      return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+    }
+
+    if (rest === null) {
+      // Listado de KAL/CAL del grupo: público.
+      return NextResponse.next();
+    }
+    if (rest !== "nuevo") {
+      // Ficha del KAL/CAL: el id tiene que existir para responder 404 real.
+      if (rest.length === 0 || !(await eventExists(rest))) {
+        return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+      }
+      return NextResponse.next();
+    }
+    // `/eventos/nuevo` es privada: sigue al chequeo de sesión de abajo.
+  }
+
+  const eventsEditMatch = pathname.match(GROUP_EVENTS_EDIT_PATH_PATTERN);
+  if (eventsEditMatch) {
+    const groupSlug = decodeSegment(eventsEditMatch[1])?.trim() ?? "";
+    const eventId = decodeSegment(eventsEditMatch[2])?.trim() ?? "";
+
+    if (
+      groupSlug.length === 0 ||
+      eventId.length === 0 ||
+      !(await groupExists(groupSlug)) ||
+      !(await eventExists(eventId))
+    ) {
+      return NextResponse.rewrite(new URL("/no-encontrado", request.url));
+    }
+    // `/eventos/id/editar` es privada: sigue al chequeo de sesión de abajo.
+  }
+
   if (pathname.startsWith("/@")) {
     const rest = pathname.slice(2);
 
@@ -235,7 +298,9 @@ export async function proxy(request: NextRequest) {
     YARN_EDIT_PATH_PATTERN.test(pathname) ||
     PATTERN_EDIT_PATH_PATTERN.test(pathname) ||
     GROUP_EDIT_PATH_PATTERN.test(pathname) ||
-    GROUP_THREADS_NEW_PATH_PATTERN.test(pathname);
+    GROUP_THREADS_NEW_PATH_PATTERN.test(pathname) ||
+    GROUP_EVENTS_NEW_PATH_PATTERN.test(pathname) ||
+    GROUP_EVENTS_EDIT_PATH_PATTERN.test(pathname);
   if (!isPrivate) {
     return NextResponse.next();
   }
@@ -272,6 +337,8 @@ export const config = {
     "/grupos/:slug/editar",
     "/grupos/:slug/hilos",
     "/grupos/:slug/hilos/:thread",
+    "/grupos/:slug/eventos",
+    "/grupos/:slug/eventos/:path*",
     "/grupos/nuevo",
     "/comunidad/preguntar",
   ],

@@ -3,6 +3,7 @@ import { relations } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  date,
   index,
   jsonb,
   pgTable,
@@ -17,11 +18,11 @@ import { image } from "./media-schema";
 import { project } from "./project-schema";
 
 /**
- * Comunidad: grupos, membresías, hilos y respuestas (spec §5.9 y tablas
- * `group` / `group_member` / `thread` / `post` de §6). Los KAL/CAL llegan en
- * el próximo tramo de la fase.
+ * Comunidad: grupos, membresías, hilos, respuestas y KAL/CAL (spec §5.9,
+ * §5.10 y tablas `group` / `group_member` / `thread` / `post` / `event` /
+ * `event_participant` de §6).
  *
- * Decisiones (D-054 y D-055):
+ * Decisiones (D-054, D-055 y D-056):
  * - El grupo tiene dueña/o (quien lo creó), moderadores y miembros; la
  *   membresía vive en `group_member` con `role` y `status`, PK compuesta
  *   (una fila por persona y grupo).
@@ -34,6 +35,9 @@ import { project } from "./project-schema";
  *   puede marcarse con una respuesta solución (D-055).
  * - `thread.project_id` acompaña el "Pedir ayuda" desde un proyecto (D-055):
  *   la ficha del hilo muestra la tarjeta del proyecto con sus fotos y patrón.
+ * - Un KAL/CAL es un evento del grupo con hilo propio (`event.thread_id`):
+ *   la conversación vive en el hilo y el evento aporta fechas, patrones,
+ *   etapas opcionales y participantes con su proyecto (D-056).
  */
 
 export const GROUP_CATEGORIES = [
@@ -91,6 +95,26 @@ export const THREAD_BODY_MAX = 4000;
 export const POST_BODY_MAX = 4000;
 /** Fotos por hilo o respuesta (mismo tope que una entrada del diario). */
 export const THREAD_PHOTOS_MAX = 4;
+
+/** Técnica del evento: KAL (dos agujas) o CAL (crochet), spec §5.10. */
+export const EVENT_CRAFTS = ["dos-agujas", "crochet"] as const;
+
+export type EventCraft = (typeof EVENT_CRAFTS)[number];
+
+export function isEventCraft(value: string): value is EventCraft {
+  return (EVENT_CRAFTS as readonly string[]).includes(value);
+}
+
+export const EVENT_NAME_MAX = 120;
+/** Patrones de la biblioteca que acompañan al evento (`pattern_ids`). */
+export const EVENT_PATTERNS_MAX = 4;
+/** Etapas opcionales ("una por semana"); tope generoso para KAL/CAL largos. */
+export const EVENT_STAGES_MAX = 8;
+export const EVENT_STAGE_TITLE_MAX = 80;
+export const EVENT_STAGE_NOTE_MAX = 240;
+
+/** Etapa del evento: el título es obligatorio y la nota, opcional. */
+export type EventStage = { title: string; note: string };
 
 export const group = pgTable(
   "group",
@@ -220,6 +244,74 @@ export const post = pgTable(
   ],
 );
 
+export const event = pgTable(
+  "event",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    groupId: text("group_id")
+      .notNull()
+      .references(() => group.id, { onDelete: "cascade" }),
+    /**
+     * Hilo propio del evento (spec §5.10): ahí vive la conversación y el
+     * título y el cuerpo se editan junto con el KAL/CAL.
+     */
+    threadId: text("thread_id")
+      .notNull()
+      .references(() => thread.id, { onDelete: "cascade" }),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** KAL cuando es con dos agujas; CAL cuando es a crochet. */
+    craft: text("craft").$type<EventCraft>().notNull(),
+    /** Fechas de calendario (sin hora): el estado se deriva con `hoy`. */
+    startsAt: date("starts_at").notNull(),
+    endsAt: date("ends_at").notNull(),
+    /** Patrones de la biblioteca que acompañan al evento (0 a 4). */
+    patternIds: jsonb("pattern_ids").$type<string[]>().notNull().default([]),
+    /** Etapas opcionales del tejido (0 a 8), en orden. */
+    stages: jsonb("stages").$type<EventStage[]>().notNull().default([]),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("event_thread_unique").on(table.threadId),
+    index("event_group_idx").on(table.groupId, table.startsAt),
+    index("event_creator_idx").on(table.createdBy),
+  ],
+);
+
+export const eventParticipant = pgTable(
+  "event_participant",
+  {
+    eventId: text("event_id")
+      .notNull()
+      .references(() => event.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** Proyecto propio que la persona teje en el evento (se puede cambiar). */
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.eventId, table.userId] }),
+    index("event_participant_user_idx").on(table.userId),
+    index("event_participant_project_idx").on(table.projectId),
+  ],
+);
+
 export const groupRelations = relations(group, ({ one, many }) => ({
   creator: one(user, {
     fields: [group.createdBy],
@@ -270,3 +362,37 @@ export const postRelations = relations(post, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+export const eventRelations = relations(event, ({ one, many }) => ({
+  group: one(group, {
+    fields: [event.groupId],
+    references: [group.id],
+  }),
+  thread: one(thread, {
+    fields: [event.threadId],
+    references: [thread.id],
+  }),
+  creator: one(user, {
+    fields: [event.createdBy],
+    references: [user.id],
+  }),
+  participants: many(eventParticipant),
+}));
+
+export const eventParticipantRelations = relations(
+  eventParticipant,
+  ({ one }) => ({
+    event: one(event, {
+      fields: [eventParticipant.eventId],
+      references: [event.id],
+    }),
+    user: one(user, {
+      fields: [eventParticipant.userId],
+      references: [user.id],
+    }),
+    project: one(project, {
+      fields: [eventParticipant.projectId],
+      references: [project.id],
+    }),
+  }),
+);

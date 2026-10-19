@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 import {
+  EVENT_CRAFTS,
+  EVENT_NAME_MAX,
+  EVENT_PATTERNS_MAX,
+  EVENT_STAGE_NOTE_MAX,
+  EVENT_STAGE_TITLE_MAX,
+  EVENT_STAGES_MAX,
   GROUP_CATEGORIES,
   GROUP_DESCRIPTION_MAX,
   GROUP_NAME_MAX,
@@ -18,13 +24,14 @@ import { slugify } from "@/lib/slug";
 import { es } from "@/messages/es";
 
 /**
- * Validación y reglas chicas de la comunidad (spec §5.9).
+ * Validación y reglas chicas de la comunidad (spec §5.9 y §5.10).
  *
  * `groupFormSchema` es el esquema del formulario de grupo: a diferencia de
  * otros formularios, todo llega ya como texto o elección, así que el mismo
  * esquema sirve para el cliente y para la acción del servidor (que revalida
  * siempre, spec §9). Acá también viven los helpers puros de permisos, los
- * esquemas de hilos y respuestas, y el orden de la lista de integrantes.
+ * esquemas de hilos, respuestas y KAL/CAL, y el orden de la lista de
+ * integrantes.
  */
 
 export const groupFormSchema = z.object({
@@ -120,6 +127,122 @@ export const threadFlagSchema = z.object({
   flag: z.enum(["pinned", "locked"]),
   value: z.boolean(),
 });
+
+/** Fecha de calendario en ISO corto (`2026-10-19`), la que usan los KAL/CAL. */
+const CALENDAR_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isCalendarDate(value: string): boolean {
+  return CALENDAR_DATE_PATTERN.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+export const eventStageSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, es.community.events.errors.stageTitleRequired)
+    .max(EVENT_STAGE_TITLE_MAX, es.community.events.errors.stageTitleLong),
+  note: z
+    .string()
+    .trim()
+    .max(EVENT_STAGE_NOTE_MAX, es.community.events.errors.stageNoteLong),
+});
+
+export type EventStageValues = z.infer<typeof eventStageSchema>;
+
+export const eventFormSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, es.community.events.errors.nameRequired)
+      .max(EVENT_NAME_MAX, es.community.events.errors.nameLong),
+    craft: z.enum(EVENT_CRAFTS, {
+      message: es.community.events.errors.craftInvalid,
+    }),
+    startsAt: z.string().refine(isCalendarDate, {
+      message: es.community.events.errors.startRequired,
+    }),
+    endsAt: z.string().refine(isCalendarDate, {
+      message: es.community.events.errors.endRequired,
+    }),
+    description: z
+      .string()
+      .trim()
+      .max(THREAD_BODY_MAX, es.community.errors.bodyLong),
+    patternIds: z.array(z.string().min(1)).max(EVENT_PATTERNS_MAX),
+    stages: z
+      .array(eventStageSchema)
+      .max(EVENT_STAGES_MAX, es.community.events.errors.stagesMax),
+  })
+  .refine((data) => data.endsAt >= data.startsAt, {
+    path: ["endsAt"],
+    message: es.community.events.errors.dateOrder,
+  });
+
+export type EventFormValues = z.infer<typeof eventFormSchema>;
+
+export const emptyEventValues: EventFormValues = {
+  name: "",
+  craft: "dos-agujas",
+  startsAt: "",
+  endsAt: "",
+  description: "",
+  patternIds: [],
+  stages: [],
+};
+
+export const eventUpdateSchema = z.object({
+  eventId: z.string().min(1),
+  values: eventFormSchema,
+});
+
+export type EventUpdateInput = z.infer<typeof eventUpdateSchema>;
+
+export const eventCreateSchema = z.object({
+  groupId: z.string().min(1),
+  values: eventFormSchema,
+});
+
+export type EventCreateInput = z.infer<typeof eventCreateSchema>;
+
+export const eventJoinSchema = z.object({
+  eventId: z.string().min(1),
+  projectId: z.string().min(1),
+});
+
+export const eventLeaveSchema = z.object({
+  eventId: z.string().min(1),
+});
+
+export type EventStatus = "proximo" | "en-curso" | "terminado";
+
+/** La fecha de hoy en ISO corto, para derivar el estado del evento. */
+export function todayIso(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
+
+/**
+ * Estado del KAL/CAL a partir de sus fechas (no hay columna: se deriva).
+ * `startsAt` y `endsAt` son ISO corto, así que comparan como texto.
+ */
+export function eventStatus(
+  startsAt: string,
+  endsAt: string,
+  today: string = todayIso(),
+): EventStatus {
+  if (today < startsAt) {
+    return "proximo";
+  }
+  if (today > endsAt) {
+    return "terminado";
+  }
+  return "en-curso";
+}
+
+/** Los KAL/CAL los organiza la moderación del grupo (D-056). */
+export function canOrganizeEvent(role: GroupRole | null | undefined): boolean {
+  return canModerate(role);
+}
 
 /** Tipos de hilo que puede abrir cada rol: los anuncios son de moderación. */
 export function canCreateThreadType(

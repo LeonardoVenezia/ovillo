@@ -7,10 +7,12 @@ import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EventCard } from "@/features/community/components/event-card";
 import { GroupJoinButton } from "@/features/community/components/group-join-button";
 import { GroupMembers } from "@/features/community/components/group-members";
 import { GroupPending } from "@/features/community/components/group-pending";
 import { ThreadCard } from "@/features/community/components/thread-card";
+import { listEvents } from "@/features/community/event-queries";
 import {
   categoryLabel,
   joinPolicyLabel,
@@ -21,18 +23,22 @@ import {
   listGroupMembers,
   listPendingMembers,
 } from "@/features/community/queries";
-import { canModerate, isGroupOwner } from "@/features/community/schemas";
+import {
+  canModerate,
+  canOrganizeEvent,
+  isGroupOwner,
+} from "@/features/community/schemas";
 import { listThreads } from "@/features/community/thread-queries";
 import { getOptionalUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
 /**
- * Ficha de un grupo (spec §5.9, `/grupos/slug`).
+ * Ficha de un grupo (spec §5.9 y §5.10, `/grupos/slug`).
  *
  * El proxy ya chequeó que exista (para poder responder 404 de verdad, D-023).
  * La ficha se lee al momento porque muestra el estado de quien mira: el botón
- * de unirse, las solicitudes pendientes (solo moderación), los hilos
- * recientes y la lista de integrantes.
+ * de unirse, las solicitudes pendientes (solo moderación), los KAL/CAL, los
+ * hilos recientes y la lista de integrantes.
  */
 
 type Props = PageProps<"/grupos/[slug]">;
@@ -65,10 +71,11 @@ async function GroupView({ slug }: { slug: string }) {
   }
 
   const moderates = canModerate(group.viewerRole);
-  const [members, pending, threads] = await Promise.all([
+  const [members, pending, threads, events] = await Promise.all([
     listGroupMembers(group.id),
     moderates ? listPendingMembers(group.id) : Promise.resolve([]),
     listThreads({ groupId: group.id, limit: 10 }),
+    listEvents({ groupId: group.id }),
   ]);
 
   const joinState = group.viewerRole
@@ -192,6 +199,46 @@ async function GroupView({ slug }: { slug: string }) {
           </p>
         </section>
       ) : null}
+
+      <section className="flex flex-col gap-3" data-testid="group-events">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-heading text-xl font-semibold">
+            {es.community.events.sectionTitle}
+          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            {canOrganizeEvent(group.viewerRole) ? (
+              <Button size="sm" asChild>
+                <Link
+                  href={`/grupos/${group.slug}/eventos/nuevo`}
+                  data-testid="new-event"
+                >
+                  {es.community.events.newCta}
+                </Link>
+              </Button>
+            ) : null}
+            {events.length > 0 ? (
+              <Link
+                href={`/grupos/${group.slug}/eventos`}
+                className="text-sm underline-offset-4 hover:underline"
+              >
+                {es.community.events.viewAll}
+              </Link>
+            ) : null}
+          </div>
+        </div>
+
+        {events.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {events.slice(0, 3).map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            {es.community.events.empty}
+          </p>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">

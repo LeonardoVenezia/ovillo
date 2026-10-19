@@ -1,11 +1,14 @@
 import type {
+  EventCraft,
   GroupCategory,
   JoinPolicy,
   ThreadType,
 } from "@/db/community-schema";
 import { es } from "@/messages/es";
 
-/** Etiquetas legibles de los grupos y los hilos (spec §5.9). */
+import type { EventStatus } from "./schemas";
+
+/** Etiquetas legibles de los grupos, los hilos y los KAL/CAL (spec §5.9–5.10). */
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
@@ -62,4 +65,66 @@ export function whenLabel(value: Date, now: Date = new Date()): string {
     return es.community.when.days.replace("{count}", String(days));
   }
   return dateFormatter.format(value);
+}
+
+const dayMonthFormatter = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+
+const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** "Del 5 al 25 de octubre de 2026": el rango lindo de un KAL/CAL. */
+export function eventDatesLabel(startsAt: string, endsAt: string): string {
+  const start = new Date(`${startsAt}T00:00:00Z`);
+  const end = new Date(`${endsAt}T00:00:00Z`);
+  const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
+  const sameMonth = sameYear && start.getUTCMonth() === end.getUTCMonth();
+
+  if (sameMonth) {
+    return es.community.events.datesRange
+      .replace("{from}", String(start.getUTCDate()))
+      .replace("{to}", fullDateFormatter.format(end));
+  }
+  if (sameYear) {
+    return es.community.events.datesRange
+      .replace("{from}", dayMonthFormatter.format(start))
+      .replace("{to}", fullDateFormatter.format(end));
+  }
+  return es.community.events.datesRange
+    .replace("{from}", fullDateFormatter.format(start))
+    .replace("{to}", fullDateFormatter.format(end));
+}
+
+/** KAL o CAL, según la técnica del evento. */
+export function eventCraftLabel(craft: EventCraft): string {
+  return es.community.events.crafts[craft];
+}
+
+export function eventStatusLabel(status: EventStatus): string {
+  return es.community.events.statuses[status];
+}
+
+/** "Etapa 2" para la línea de tiempo del evento. */
+export function eventStageLabel(index: number): string {
+  return es.community.events.stageLabel.replace("{n}", String(index + 1));
+}
+
+export function eventParticipantsLabel(count: number): string {
+  return count === 1
+    ? es.community.events.participantsOne
+    : es.community.events.participantsCount.replace("{count}", String(count));
+}
+
+/** "0 de 3 terminaron" (los terminados salen del proyecto de cada quien). */
+export function eventFinishedLabel(finished: number, total: number): string {
+  return es.community.events.finishedLabel
+    .replace("{finished}", String(finished))
+    .replace("{total}", String(total));
 }

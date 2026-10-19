@@ -25,3 +25,4 @@ export * from "./queue-schema";
 export * from "./saved-schema";
 export * from "./goal-schema";
 export * from "./community-schema";
+export * from "./glossary-schema";

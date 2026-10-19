@@ -6,8 +6,10 @@ import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EventCard } from "@/features/community/components/event-card";
 import { GroupCard } from "@/features/community/components/group-card";
 import { ThreadCard } from "@/features/community/components/thread-card";
+import { listActiveEvents } from "@/features/community/event-queries";
 import { listGroups, listUserGroups } from "@/features/community/queries";
 import {
   listThreads,
@@ -21,10 +23,11 @@ export const metadata: Metadata = {
 };
 
 /**
- * Comunidad (spec §5.9, `/comunidad`): los grupos propios (o la invitación a
- * sumarse), lo último que pasó en los hilos, las preguntas que esperan
- * respuesta y una muestra de los grupos con más gente. La sesión y los datos
- * se leen al momento dentro del límite de `Suspense` (D-054).
+ * Comunidad (spec §5.9 y §5.10, `/comunidad`): los grupos propios (o la
+ * invitación a sumarse), los KAL/CAL activos, lo último que pasó en los
+ * hilos, las preguntas que esperan respuesta y una muestra de los grupos con
+ * más gente. La sesión y los datos se leen al momento dentro del límite de
+ * `Suspense` (D-054), con el atajo al glosario al final.
  */
 export default function CommunityPage() {
   return (
@@ -52,11 +55,12 @@ export default function CommunityPage() {
 
 async function CommunityContent() {
   const user = await getOptionalUser();
-  const [myGroups, explore, recent, unanswered] = await Promise.all([
+  const [myGroups, explore, recent, unanswered, actives] = await Promise.all([
     user ? listUserGroups(user.id) : Promise.resolve([]),
     listGroups({ viewerId: user?.id, limit: 6 }),
     listThreads({ limit: 5 }),
     listUnansweredQuestions(5),
+    listActiveEvents(3),
   ]);
 
   return (
@@ -79,6 +83,23 @@ async function CommunityContent() {
           )}
         </section>
       ) : null}
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-heading text-xl font-semibold">
+          {es.community.events.sectionTitle}
+        </h2>
+        {actives.length > 0 ? (
+          <div className="flex flex-col gap-3" data-testid="active-events">
+            {actives.map((event) => (
+              <EventCard key={event.id} event={event} showGroup />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            {es.community.events.emptyActive}
+          </p>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-heading text-xl font-semibold">
@@ -147,6 +168,22 @@ async function CommunityContent() {
             }
           />
         )}
+      </section>
+
+      <section className="border-border bg-card flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4">
+        <div className="flex flex-col gap-1">
+          <span className="font-heading font-semibold">
+            {es.glossary.title}
+          </span>
+          <span className="text-muted-foreground text-sm">
+            {es.glossary.intro}
+          </span>
+        </div>
+        <Button variant="outline" asChild>
+          <Link href="/glosario" data-testid="community-glossary">
+            {es.glossary.openCta}
+          </Link>
+        </Button>
       </section>
     </div>
   );
