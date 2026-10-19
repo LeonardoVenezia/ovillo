@@ -4,7 +4,7 @@
 > **Se lee al empezar cada sesión y se actualiza al cerrar cada tramo** — aunque la fase no haya terminado, incluso a mitad de una tarea.
 > El histórico completo por fase está en `PROGRESS.md`; las decisiones, en `DECISIONS.md`.
 
-Última actualización: **2026-10-19** · Fase 4 (Catálogo) cerrada y verificada; **Fase 5 (Mi tejido, parte 2) completa: tramos 1–4 hechos y verificados en producción** → lo que sigue es la Fase 6 (Comunidad)
+Última actualización: **2026-10-19** · Fase 5 (Mi tejido, parte 2) completa y verificada; **Fase 6 (Comunidad) en curso: tramo 1 (grupos y membresía) hecho y verificado en producción** → lo que sigue es el tramo 2 (hilos y respuestas)
 Producción: <https://ovillo-sepia.vercel.app>
 
 ## Resumen
@@ -13,11 +13,12 @@ Producción: <https://ovillo-sepia.vercel.app>
 - **Fase 4 — Catálogo, cerrada**: tramo 1, catálogo de lanas (38 lanas de 9 marcas reales); tramo 2, **biblioteca de patrones** (20 patrones gratuitos reales de Revesderecho, Katia y LHO) con propuestas de la comunidad; y tramo 3, **vínculo proyecto ↔ patrón con las galerías "hechos por la comunidad"** (ficha del patrón y `/explorar/proyectos`) y **pulido del buscador** (orden relevancia/populares/recientes, filtros avanzados de metraje e idioma y chips de filtros activos).
 - El repo quedó **limpio**: todo pusheado a `main`, CI en verde, deploy verificado en producción.
 - **Fase 5 — Mi tejido (parte 2), completa**: tramo 1 (inventario de lana) **hecho y verificado en producción** (migración `0009`); tramo 2 (lanas y herramientas en los proyectos, galería "Hechos por la comunidad" en la ficha de lana y filtro "Con mi lana") **hecho y verificado en producción** (migración `0010`); tramo 3 (**Quiero tejer** —cola ordenable con lana planeada, fecha objetivo y notas— y **Guardados y colecciones** —patrones, proyectos y lanas con colecciones públicas en el perfil—) **hecho y verificado en producción** (migración `0011`); y tramo 4 (**Mi año tejiendo**: meta anual de proyectos terminados, resumen del año con metros estimados y lana más usada, y progreso en el perfil público) **hecho y verificado en producción** (migración `0012`).
+- **Fase 6 — Comunidad, tramo 1 (grupos y membresía) hecho y verificado en producción** (migración `0013`): grupos con categoría, reglas, portada y política de ingreso (`abierto` o `aprobacion`); membresía con roles (`dueño`/`moderador`/`miembro`) y solicitudes que los moderadores aceptan o rechazan; hub `/comunidad`, directorio con búsqueda sin acentos y 6 grupos oficiales sembrados (cuenta nueva **Equipo Ovillo**). Sigue el tramo 2: hilos y respuestas.
 
 ## Próximos pasos (en orden)
 
-1. **Abrir la Fase 6 — Comunidad** (spec §5.9 y §5.10 + glosario): grupos con roles, hilos con tipos y respuesta solución, "Pedir ayuda" desde un proyecto, KAL/CAL y glosario. Lo primero es leer esas secciones de la spec y planificar los tramos (el detalle queda en `PROGRESS.md` al arrancar).
-2. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (los tramos de la Fase 5 usaron D-045 a D-053).
+1. **Seguir la Fase 6 — Comunidad: tramo 2 (hilos y respuestas)** (spec §5.9): tipos de hilo, respuesta solución, fotos y "Pedir ayuda" desde un proyecto; después vienen KAL/CAL (§5.10) y el glosario (§5.14). El detalle de los tramos está en `PROGRESS.md`.
+2. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (el tramo 1 de la Fase 6 usó D-054).
 3. Al cerrar cada tramo: gates (`pnpm typecheck && pnpm lint && pnpm test`; con e2e y `pnpm build` al cerrar fase), actualizar `ESTADO.md` (este archivo) y `PROGRESS.md`, commit + push en español, y verificar el CI y el deploy (ver "Cómo retomar").
 
 ## Pendientes que dependen del dueño (no frenan el código)
@@ -32,6 +33,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 - [ ] Recorrer en producción las lanas del proyecto: en el sweater de `/@mariaruiz` ver "Lanas del proyecto" (3 de sus 4 ovillos mostaza, disponible 1), la bufanda con la lana del catálogo y el gorro con la lana de la abuela; probar "Con mi lana" en `/explorar/patrones` con la cuenta demo; y mirar una ficha de lana con galería (`/lanas/katia/fil-piuma`, `/lanas/lanas-stop/olaf`).
 - [ ] Recorrer en producción el tramo 3 con la cuenta demo: `/mi-tejido/quiero-tejer` (3 patrones; probar el arrastre y las flechas, "Lana y fecha" y "Empezar"), `/mi-tejido/guardados` (7 guardados y dos colecciones; crear una colección, mover y filtrar), los botones "Quiero tejer"/"Guardar" en `/patrones/malu-hat`, `/lanas/katia/fil-piuma` y el sweater de `/@mariaruiz`, y la sección "Guardados" del perfil.
 - [ ] Recorrer en producción "Mi año tejiendo": `/mi-tejido/meta` con la cuenta demo (anotar, cambiar y quitar la meta de María —está en 4 y va 1—, ver el resumen con "400 m" y "Fil Piuma · Katia") y la sección nueva en `/@mariaruiz`, `/@candelateje` y `/@lupitateje`.
+- [ ] Recorrer en producción la comunidad (tramo 1): `/comunidad` y `/grupos` (búsqueda y chips de categoría), entrar y salir de un grupo con la cuenta demo, y aprobar la solicitud pendiente de Sol en `/grupos/sugerencias-para-ovillo` (María la modera).
 - [ ] Antes de abrir el registro: `pnpm db:seed-demo --clean` (borra las cuentas demo, D-034) + rama de Neon.
 - [ ] Vercel: el deploy normal sale solo con el push a `main`; no hay CLI autenticada en la máquina (solo el dueño puede tocar cosas del panel).
 
@@ -41,7 +43,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 
 ## Cuentas y URLs útiles
 
-- Prod: <https://ovillo-sepia.vercel.app> — demo: 5 cuentas `demo.*@ovillo.test` (`mariaruiz`, `candelateje`, `lupitateje`, `solaguirre`, `tomiteje`), contraseña `ovillo-demo-2026`; las crea/re-crea `pnpm db:seed-demo`.
+- Prod: <https://ovillo-sepia.vercel.app> — demo: 6 cuentas `demo.*@ovillo.test` (`mariaruiz`, `candelateje`, `lupitateje`, `solaguirre`, `tomiteje`, `ovillo` —«Equipo Ovillo», dueña de los grupos oficiales—), contraseña `ovillo-demo-2026`; las crea/re-crea `pnpm db:seed-demo`.
 - Repo: `LeonardoVenezia/ovillo` con identidad git propia del proyecto (no cambiar remoto ni identidad sin consultar; D-012).
 - CI: <https://github.com/LeonardoVenezia/ovillo/actions> o por API:
   `curl -s "https://api.github.com/repos/LeonardoVenezia/ovillo/actions/runs?per_page=1"`
@@ -53,10 +55,12 @@ Producción: <https://ovillo-sepia.vercel.app>
 3. Gates del día a día: `pnpm typecheck && pnpm lint && pnpm test`. Para e2e: `pnpm test:e2e`. Al cerrar fase: `pnpm build`.
 4. Probar prefetching/PPR de verdad: build de producción local (`pnpm build && BETTER_AUTH_URL=http://localhost:3200 pnpm start --port 3200`); el e2e corre en dev y no ve esa clase de bugs (D-036).
 5. Si `pnpm` falla instalando `drizzle-orm`: usar `--registry=https://registry.npmjs.org/` (D-011).
-6. Migraciones: siempre `pnpm db:generate` + `pnpm db:migrate` (nunca `drizzle-kit push`). La base compartida ya tiene aplicadas `0000`–`0012`. Los catálogos base se siembran (o actualizan) con `pnpm db:seed-yarns` y `pnpm db:seed-patterns`, y el contenido demo con `pnpm db:seed-demo` (los tres idempotentes; la demo enlaza 3 proyectos a patrones reales, suma 14 lanas de inventario, asigna lanas y herramientas a los proyectos, carga cola/guardados —María queda con 3 en la cola y 2 colecciones— y anota meta anual a María, Candela y Lupita).
+6. Migraciones: siempre `pnpm db:generate` + `pnpm db:migrate` (nunca `drizzle-kit push`). La base compartida ya tiene aplicadas `0000`–`0013`. Los catálogos base se siembran (o actualizan) con `pnpm db:seed-yarns` y `pnpm db:seed-patterns`, y el contenido demo con `pnpm db:seed-demo` (los tres idempotentes; la demo enlaza 3 proyectos a patrones reales, suma 14 lanas de inventario, asigna lanas y herramientas a los proyectos, carga cola/guardados —María queda con 3 en la cola y 2 colecciones—, anota meta anual a María, Candela y Lupita y siembra la comunidad —Equipo Ovillo con 6 grupos oficiales y sus membresías—).
 
 ## Últimos hitos (para confirmar que estamos al día)
 
+- `6739410` — feat(comunidad): grupos y membresía (migración `0013`); CI verde y prod verificado (`/comunidad` y `/grupos` con los 6 grupos oficiales y "6 grupos", un slug inexistente da 404 real y `/grupos/nuevo` sin sesión va con 307 a `/ingresar?volver=%2Fgrupos%2Fnuevo`; con la cuenta demo, "Tus grupos" con sus dos moderaciones y `/grupos/sugerencias-para-ovillo` con la solicitud pendiente de Sol y los botones Aceptar/Rechazar).
+- `b0d9137` — style(formato): pase de prettier en los tramos anteriores.
 - `495d459` — feat(mi-tejido): meta anual y resumen «Mi año tejiendo» (migración `0012`); CI verde y prod verificado (hub demo con "Mi año tejiendo" y "Vas 1 de 4 proyectos terminados en 2026."; `/mi-tejido/meta` con la tarjeta de meta —"Cambiar meta"/"Quitar meta"— y "Resumen 2026" con "1 proyecto", "400 m" y "Fil Piuma · Katia"; `/@mariaruiz`, `/@candelateje` (Vas 1 de 3) y `/@lupitateje` (Vas 1 de 2, "125 m") con la sección nueva; `/@tomiteje` sin sección por no tener meta ni terminados; y `/mi-tejido/meta` sin sesión con 307 a `/ingresar?volver=`).
 - `8773b2f` — feat(mi-tejido): Quiero tejer y Guardados con colecciones (migración `0011`); CI verde y prod verificado (hub con "Tenés 3 patrones en la cola" y "Tenés 7 cosas guardadas"; `/mi-tejido/quiero-tejer` con los tres patrones demo, la merino mostaza planeada, su nota y "Para el 03/12/2026"; `/mi-tejido/guardados` con "Para el invierno" (pública, 3) e "Ideas para regalar" (privada, 4); botones "Quiero tejer"/"Guardar" en `/patrones/malu-hat`, `/lanas/katia/fil-piuma` y el sweater público; `/@mariaruiz` con la sección "Guardados"; rutas privadas con 307 y vuelta).
 
