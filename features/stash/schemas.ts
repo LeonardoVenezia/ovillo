@@ -103,6 +103,55 @@ export type StashItemInput = z.infer<typeof stashItemSchema>;
 export type StashItemUpdateInput = z.infer<typeof stashItemUpdateSchema>;
 
 /**
+ * Lana usada por un proyecto (spec §5.3): sale del inventario (`stashItemId`,
+ * la que descuenta disponible) o del catálogo (`yarnId`, solo referencia).
+ * La cantidad va en ovillos y/o gramos, igual que en el inventario.
+ */
+export const projectYarnSchema = z
+  .object({
+    projectId: z.string().min(1),
+    stashItemId: z.string().min(1).nullable().default(null),
+    yarnId: z.string().min(1).nullable().default(null),
+    skeinsUsed: countField(STASH_SKEINS_MAX, es.stash.errors.skeinsRange),
+    gramsUsed: countField(STASH_GRAMS_MAX, es.stash.errors.gramsRange),
+  })
+  .superRefine((data, ctx) => {
+    if (data.stashItemId === null && data.yarnId === null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["yarnId"],
+        message: es.stash.errors.projectYarnRequired,
+      });
+    }
+    if (data.skeinsUsed === null && data.gramsUsed === null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["skeinsUsed"],
+        message: es.stash.errors.projectYarnQuantity,
+      });
+    }
+  });
+
+export const projectYarnUpdateSchema = z
+  .object({
+    id: z.string().min(1),
+    skeinsUsed: countField(STASH_SKEINS_MAX, es.stash.errors.skeinsRange),
+    gramsUsed: countField(STASH_GRAMS_MAX, es.stash.errors.gramsRange),
+  })
+  .superRefine((data, ctx) => {
+    if (data.skeinsUsed === null && data.gramsUsed === null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["skeinsUsed"],
+        message: es.stash.errors.projectYarnQuantity,
+      });
+    }
+  });
+
+export type ProjectYarnInput = z.infer<typeof projectYarnSchema>;
+export type ProjectYarnUpdateInput = z.infer<typeof projectYarnUpdateSchema>;
+
+/**
  * Completa gramos y metros a partir de los ovillos y la lana del catálogo
  * (spec §5.7: "cálculo de metros"). Solo completa lo que vino vacío y
  * recorta a los topes de la columna. Sin lana vinculada no toca nada.

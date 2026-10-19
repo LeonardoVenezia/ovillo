@@ -1,15 +1,17 @@
 "use server";
 
-import { count, eq } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { tool } from "@/db/tool-schema";
+import { project } from "@/db/project-schema";
+import { projectTool, tool } from "@/db/tool-schema";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
-import { getOwnTool } from "./queries";
+import { getOwnProjectTool, getOwnTool } from "./queries";
 import {
   TOOLS_PER_USER_MAX,
+  projectToolLinkSchema,
   toolCreateSchema,
   toolUpdateSchema,
   type ToolCreateInput,
@@ -19,6 +21,9 @@ import {
  * Acciones del inventario de herramientas (spec §5.7 y §9: Zod + autorización
  * en cada mutación). El largo del cable solo se guarda en las circulares; el
  * resto de combinaciones se limpian acá, no en la interfaz.
+ *
+ * Los vínculos con proyectos (`project_tool`, spec §5.3) viven acá también:
+ * son información del proyecto y no descuentan nada del inventario.
  */
 
 export type ToolActionResult = { ok: true } | { ok: false; error: string };
@@ -97,5 +102,81 @@ export async function deleteTool(toolId: string): Promise<ToolActionResult> {
   }
 
   await getDb().delete(tool).where(eq(tool.id, own.id));
+  return { ok: true };
+}
+
+/** Proyecto propio y vivo: la puerta de entrada de las asignaciones. */
+async function getOwnProject(userId: string, projectId: string) {
+  const rows = await getDb()
+    .select({ id: project.id })
+    .from(project)
+    .where(
+      and(
+        eq(project.id, projectId),
+        eq(project.userId, userId),
+        isNull(project.deletedAt),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+/** Suma una herramienta propia a un proyecto propio (spec §5.3). */
+export async function addProjectTool(
+  input: unknown,
+): Promise<ToolActionResult> {
+  const user = await requireUser();
+  const parsed = projectToolLinkSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: es.tools.errors.generic };
+  }
+
+  const own = await getOwnProject(user.id, parsed.data.projectId);
+  if (!own) {
+    return { ok: false, error: es.tools.errors.projectNotFound };
+  }
+
+  const ownTool = await getOwnTool(user.id, parsed.data.toolId);
+  if (!ownTool) {
+    return { ok: false, error: es.tools.errors.notFound };
+  }
+
+  const [existing] = await getDb()
+    .select({ id: projectTool.id })
+    .from(projectTool)
+    .where(
+      and(
+        eq(projectTool.projectId, own.id),
+        eq(projectTool.toolId, ownTool.id),
+      ),
+    )
+    .limit(1);
+  if (existing) {
+    return { ok: false, error: es.tools.errors.projectToolDuplicate };
+  }
+
+  await getDb()
+    .insert(projectTool)
+    .values({ projectId: own.id, toolId: ownTool.id });
+
+  return { ok: true };
+}
+
+/** Quita una herramienta del proyecto (sin tocar el inventario). */
+export async function removeProjectTool(
+  linkId: string,
+): Promise<ToolActionResult> {
+  const user = await requireUser();
+  if (typeof linkId !== "string" || linkId.length === 0) {
+    return { ok: false, error: es.tools.errors.generic };
+  }
+
+  const own = await getOwnProjectTool(user.id, linkId);
+  if (!own) {
+    return { ok: false, error: es.tools.errors.projectToolNotFound };
+  }
+
+  await getDb().delete(projectTool).where(eq(projectTool.id, own.id));
   return { ok: true };
 }

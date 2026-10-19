@@ -19,6 +19,7 @@ import {
   project,
   type ProjectStatus,
 } from "@/db/project-schema";
+import { projectYarn, stashItem } from "@/db/stash-schema";
 import { isCraft } from "@/features/profile/constants";
 import { likeContains } from "@/lib/search";
 import { normalizeText } from "@/lib/slug";
@@ -275,4 +276,49 @@ export async function listPatternProjects(
       sql`${project.finishedAt} desc nulls last`,
       desc(project.updatedAt),
     );
+}
+
+/**
+ * Galería "hechos por la comunidad" de una ficha de lana (spec §5.6): los
+ * proyectos que la usan, sea asignada desde el inventario o como referencia
+ * del catálogo. Mismas reglas que en los patrones: públicos siempre, propios
+ * también con sesión (se marcan), y los terminados primero. Un proyecto con
+ * la lana cargada dos veces sale una sola vez.
+ */
+export async function listYarnProjects(
+  yarnId: string,
+  viewerId: string | null,
+): Promise<CommunityProjectRow[]> {
+  const visibility = viewerId
+    ? or(eq(project.visibility, "publico"), eq(project.userId, viewerId))
+    : eq(project.visibility, "publico");
+
+  const rows = await getDb()
+    .select(communityColumns)
+    .from(project)
+    .innerJoin(user, eq(project.userId, user.id))
+    .leftJoin(image, eq(project.coverImageId, image.id))
+    .innerJoin(projectYarn, eq(projectYarn.projectId, project.id))
+    .leftJoin(stashItem, eq(projectYarn.stashItemId, stashItem.id))
+    .where(
+      and(
+        or(eq(projectYarn.yarnId, yarnId), eq(stashItem.yarnId, yarnId)),
+        isNull(project.deletedAt),
+        visibility,
+      ),
+    )
+    .orderBy(
+      desc(sql`${project.status} = 'terminado'`),
+      sql`${project.finishedAt} desc nulls last`,
+      desc(project.updatedAt),
+    );
+
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    if (seen.has(row.id)) {
+      return false;
+    }
+    seen.add(row.id);
+    return true;
+  });
 }

@@ -47,6 +47,8 @@ export type PatternFilterValues = {
   language: string;
   yardage: string;
   order: string;
+  /** `"mia"` = "Con mi lana" (spec §5.6): cruza el stock del inventario. */
+  lana: string;
 };
 
 /** Nombres de los parámetros en la URL (en castellano, como las rutas). */
@@ -59,6 +61,7 @@ const PARAM_NAMES: Record<keyof PatternFilterValues, string> = {
   language: "idioma",
   yardage: "metraje",
   order: "orden",
+  lana: "lana",
 };
 
 const DIFFICULTIES = [1, 2, 3, 4, 5] as const;
@@ -69,7 +72,13 @@ const ORDER_LABELS: Record<(typeof PATTERN_ORDERS)[number], string> = {
   recientes: es.patterns.orderRecent,
 };
 
-export function PatternFilters({ current }: { current: PatternFilterValues }) {
+export function PatternFilters({
+  current,
+  signedIn,
+}: {
+  current: PatternFilterValues;
+  signedIn: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState(current.q);
@@ -102,27 +111,49 @@ export function PatternFilters({ current }: { current: PatternFilterValues }) {
     currentRef.current = current;
   }, [current]);
 
+  /** Arma la query de la URL con los filtros que tienen valor. */
+  const serialize = useCallback((merged: PatternFilterValues) => {
+    const params = new URLSearchParams();
+    for (const key of Object.keys(
+      PARAM_NAMES,
+    ) as (keyof PatternFilterValues)[]) {
+      const value = merged[key];
+      if (value.length > 0) {
+        params.set(PARAM_NAMES[key], value);
+      }
+    }
+    return params.toString();
+  }, []);
+
   const apply = useCallback(
     (next: Partial<PatternFilterValues>) => {
-      const merged = { ...currentRef.current, ...next };
-      const params = new URLSearchParams();
-      for (const key of Object.keys(
-        PARAM_NAMES,
-      ) as (keyof PatternFilterValues)[]) {
-        const value = merged[key];
-        if (value.length > 0) {
-          params.set(PARAM_NAMES[key], value);
-        }
-      }
-      const search = params.toString();
+      const search = serialize({ ...currentRef.current, ...next });
       startTransition(() => {
         router.replace(search.length > 0 ? `${pathname}?${search}` : pathname, {
           scroll: false,
         });
       });
     },
-    [pathname, router, startTransition],
+    [pathname, router, serialize, startTransition],
   );
+
+  /**
+   * "Con mi lana" necesita sesión: sin ella, el ingreso con vuelta a este
+   * mismo resultado (el inventario es privado, spec §5.6).
+   */
+  function toggleMyStash() {
+    if (currentRef.current.lana === "mia") {
+      apply({ lana: "" });
+      return;
+    }
+    if (!signedIn) {
+      const search = serialize({ ...currentRef.current, lana: "mia" });
+      const target = search.length > 0 ? `${pathname}?${search}` : pathname;
+      router.push(`/ingresar?volver=${encodeURIComponent(target)}`);
+      return;
+    }
+    apply({ lana: "mia" });
+  }
 
   // Búsqueda con respiro: navega 350 ms después de la última tecla.
   useEffect(() => {
@@ -140,7 +171,8 @@ export function PatternFilters({ current }: { current: PatternFilterValues }) {
     current.difficulty.length > 0 ||
     current.weight.length > 0 ||
     current.language.length > 0 ||
-    current.yardage.length > 0;
+    current.yardage.length > 0 ||
+    current.lana.length > 0;
 
   // Lo que vive en los selects se resume en chips que se quitan solos: las
   // técnicas ya se ven seleccionadas arriba, así que no se repiten acá.
@@ -231,6 +263,20 @@ export function PatternFilters({ current }: { current: PatternFilterValues }) {
             }
           />
         ))}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap gap-2">
+          <FilterChip
+            label={es.patterns.stashFilter}
+            active={current.lana === "mia"}
+            testId="pattern-filter-lana-mia"
+            onClick={toggleMyStash}
+          />
+        </div>
+        <p className="text-muted-foreground text-xs">
+          {es.patterns.stashFilterHint}
+        </p>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
@@ -395,6 +441,7 @@ export function PatternFilters({ current }: { current: PatternFilterValues }) {
                 language: "",
                 yardage: "",
                 order: "",
+                lana: "",
               });
             }}
           >

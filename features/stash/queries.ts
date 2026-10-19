@@ -1,4 +1,15 @@
-import { and, count, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  isNotNull,
+  isNull,
+  ne,
+  sql,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { getDb } from "@/db";
 import { image } from "@/db/media-schema";
@@ -175,4 +186,100 @@ export async function getOwnStashItem(
     return null;
   }
   return { ...row.item, imageR2Key: row.imageR2Key };
+}
+
+export type ProjectYarnItem = {
+  id: string;
+  stashItemId: string | null;
+  yarnId: string | null;
+  skeinsUsed: number | null;
+  gramsUsed: number | null;
+  /** Cómo se muestra: el nombre propio o el de la lana del catálogo. */
+  name: string;
+  brandName: string | null;
+  colorway: string | null;
+  weight: YarnWeight | null;
+  /** `true` = sale del inventario (descuenta disponible); `false`, del catálogo. */
+  fromStash: boolean;
+};
+
+/**
+ * Las lanas de un proyecto (spec §5.3), en el orden en que se cargaron. Cada
+ * fila sale del inventario (y entonces descuenta disponible) o del catálogo
+ * (solo referencia); los alias resuelven las dos mitades en una sola consulta.
+ */
+export async function listProjectYarns(
+  projectId: string,
+): Promise<ProjectYarnItem[]> {
+  const stashYarn = alias(yarn, "stash_yarn");
+  const stashBrand = alias(yarnBrand, "stash_brand");
+  const catalogYarn = alias(yarn, "catalog_yarn");
+  const catalogBrand = alias(yarnBrand, "catalog_brand");
+
+  const rows = await getDb()
+    .select({
+      id: projectYarn.id,
+      stashItemId: projectYarn.stashItemId,
+      yarnId: projectYarn.yarnId,
+      skeinsUsed: projectYarn.skeinsUsed,
+      gramsUsed: projectYarn.gramsUsed,
+      stashCustomName: stashItem.customName,
+      stashColorway: stashItem.colorway,
+      stashWeight: stashItem.weight,
+      stashYarnName: stashYarn.name,
+      stashYarnWeight: stashYarn.weight,
+      stashBrandName: stashBrand.name,
+      catalogYarnName: catalogYarn.name,
+      catalogYarnWeight: catalogYarn.weight,
+      catalogBrandName: catalogBrand.name,
+    })
+    .from(projectYarn)
+    .leftJoin(stashItem, eq(projectYarn.stashItemId, stashItem.id))
+    .leftJoin(stashYarn, eq(stashItem.yarnId, stashYarn.id))
+    .leftJoin(stashBrand, eq(stashYarn.brandId, stashBrand.id))
+    .leftJoin(catalogYarn, eq(projectYarn.yarnId, catalogYarn.id))
+    .leftJoin(catalogBrand, eq(catalogYarn.brandId, catalogBrand.id))
+    .where(eq(projectYarn.projectId, projectId))
+    .orderBy(asc(projectYarn.createdAt), asc(projectYarn.id));
+
+  return rows.map((row) => {
+    const fromStash = row.stashItemId !== null;
+    return {
+      id: row.id,
+      stashItemId: row.stashItemId,
+      yarnId: row.yarnId,
+      skeinsUsed: row.skeinsUsed,
+      gramsUsed: row.gramsUsed,
+      name: fromStash
+        ? (row.stashCustomName ?? row.stashYarnName ?? "")
+        : (row.catalogYarnName ?? ""),
+      brandName: fromStash ? row.stashBrandName : row.catalogBrandName,
+      colorway: fromStash ? row.stashColorway : null,
+      weight: fromStash
+        ? (row.stashYarnWeight ?? row.stashWeight)
+        : row.catalogYarnWeight,
+      fromStash,
+    };
+  });
+}
+
+/** Una lana asignada propia: autorización a través de su proyecto. */
+export async function getOwnProjectYarn(
+  userId: string,
+  linkId: string,
+): Promise<{ id: string; projectId: string } | null> {
+  const rows = await getDb()
+    .select({ id: projectYarn.id, projectId: projectYarn.projectId })
+    .from(projectYarn)
+    .innerJoin(project, eq(projectYarn.projectId, project.id))
+    .where(
+      and(
+        eq(projectYarn.id, linkId),
+        eq(project.userId, userId),
+        isNull(project.deletedAt),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
 }

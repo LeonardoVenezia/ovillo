@@ -1,7 +1,8 @@
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { tool } from "@/db/tool-schema";
+import { project } from "@/db/project-schema";
+import { projectTool, tool } from "@/db/tool-schema";
 
 /**
  * Consultas del inventario de herramientas (spec §5.7). Siempre del lado
@@ -36,6 +37,44 @@ export async function getOwnTool(
     .select()
     .from(tool)
     .where(and(eq(tool.id, toolId), eq(tool.userId, userId)))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+/** Una herramienta de un proyecto, con el id del vínculo para poder quitarla. */
+export type ProjectToolItem = Tool & { linkId: string };
+
+/** Las herramientas de un proyecto (spec §5.3), de la más fina a la más gruesa. */
+export async function listProjectTools(
+  projectId: string,
+): Promise<ProjectToolItem[]> {
+  const rows = await getDb()
+    .select({ linkId: projectTool.id, tool })
+    .from(projectTool)
+    .innerJoin(tool, eq(projectTool.toolId, tool.id))
+    .where(eq(projectTool.projectId, projectId))
+    .orderBy(asc(tool.sizeMm), asc(tool.createdAt));
+
+  return rows.map((row) => ({ ...row.tool, linkId: row.linkId }));
+}
+
+/** Un vínculo herramienta-proyecto propio: autorización vía el proyecto. */
+export async function getOwnProjectTool(
+  userId: string,
+  linkId: string,
+): Promise<{ id: string; toolId: string } | null> {
+  const rows = await getDb()
+    .select({ id: projectTool.id, toolId: projectTool.toolId })
+    .from(projectTool)
+    .innerJoin(project, eq(projectTool.projectId, project.id))
+    .where(
+      and(
+        eq(projectTool.id, linkId),
+        eq(project.userId, userId),
+        isNull(project.deletedAt),
+      ),
+    )
     .limit(1);
 
   return rows[0] ?? null;

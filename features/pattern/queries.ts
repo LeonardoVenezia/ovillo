@@ -1,4 +1,14 @@
-import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { getDb } from "@/db";
@@ -13,6 +23,7 @@ import {
 import { project } from "@/db/project-schema";
 import { isYarnWeight, type YarnWeight } from "@/db/yarn-schema";
 import { isCraft, type Craft } from "@/features/profile/constants";
+import type { StashStockEntry } from "@/features/stash/stock";
 import { likeContains } from "@/lib/search";
 import { normalizeText } from "@/lib/slug";
 
@@ -111,17 +122,11 @@ function rankFor(query: string) {
 }
 
 /**
- * Patrones de la biblioteca, con los `sin-revisar` incluidos (spec §5.5: la
- * propuesta queda visible al instante, marcada en la interfaz). El orden por
- * defecto es recientes; con búsqueda, relevancia (spec §5.5).
+ * Condiciones del listado (spec §5.5): las comparten el listado cacheado y el
+ * de "Con mi lana". Devuelve además la búsqueda normalizada, que el orden
+ * necesita para la relevancia.
  */
-export async function listPatterns(
-  filters: PatternFilters = {},
-): Promise<PatternListItem[]> {
-  "use cache";
-  cacheLife("hours");
-  cacheTag("patrones");
-
+function patternConditions(filters: PatternFilters) {
   const conditions = [];
 
   const query = normalizeText(filters.q ?? "").slice(0, 80);
@@ -172,23 +177,88 @@ export async function listPatterns(
     );
   }
 
-  const order = resolvePatternOrder(filters.order ?? "", query.length > 0);
+  return { conditions, query };
+}
+
+/** Orden del listado: el elegido en la URL o, por defecto, el que toca. */
+function orderByFor(order: string | undefined, query: string) {
+  const resolved = resolvePatternOrder(order ?? "", query.length > 0);
+  return resolved === "relevancia"
+    ? [desc(rankFor(query)), desc(pattern.createdAt), asc(pattern.name)]
+    : resolved === "populares"
+      ? [desc(countPublicProjects), desc(pattern.createdAt), asc(pattern.name)]
+      : [desc(pattern.createdAt), asc(pattern.name)];
+}
+
+/**
+ * Patrones de la biblioteca, con los `sin-revisar` incluidos (spec §5.5: la
+ * propuesta queda visible al instante, marcada en la interfaz). El orden por
+ * defecto es recientes; con búsqueda, relevancia (spec §5.5).
+ */
+export async function listPatterns(
+  filters: PatternFilters = {},
+): Promise<PatternListItem[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("patrones");
+
+  const { conditions, query } = patternConditions(filters);
 
   return getDb()
     .select({ ...patternColumns, projectCount: countPublicProjects })
     .from(pattern)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(
-      ...(order === "relevancia"
-        ? [desc(rankFor(query)), desc(pattern.createdAt), asc(pattern.name)]
-        : order === "populares"
-          ? [
-              desc(countPublicProjects),
-              desc(pattern.createdAt),
-              asc(pattern.name),
-            ]
-          : [desc(pattern.createdAt), asc(pattern.name)]),
-    );
+    .orderBy(...orderByFor(filters.order, query));
+}
+
+/**
+ * "Con mi lana" (spec §5.6): el listado de siempre, cruzado con el stock del
+ * inventario. Es dato de cada persona y cambia seguido, así que no se cachea.
+ * Entra el patrón que puede salir con alguna lana disponible:
+ *
+ * - con grosor y metraje cargados: hace falta que ese grosor esté y que los
+ *   metros disponibles alcancen (si la lana no tiene metros, no alcanza);
+ * - solo con grosor: que ese grosor esté en el inventario;
+ * - solo con metraje: que los metros disponibles de cualquier grosor alcancen.
+ *
+ * Los patrones sin grosor ni metraje quedan afuera: no hay con qué cruzarlos
+ * (D-049). Sin stock no hay nada que cruzar y se devuelve vacío.
+ */
+export async function listPatternsForStash(
+  stock: StashStockEntry[],
+  filters: PatternFilters = {},
+): Promise<PatternListItem[]> {
+  if (stock.length === 0) {
+    return [];
+  }
+
+  const { conditions, query } = patternConditions(filters);
+
+  const total = sql`coalesce(${pattern.yardageMax}, ${pattern.yardageMin})`;
+  const perWeight = stock.map((entry) =>
+    and(
+      or(isNull(pattern.yarnWeight), eq(pattern.yarnWeight, entry.weight)),
+      or(
+        isNull(total),
+        entry.hasMeters ? sql`${total} <= ${entry.meters}` : sql`false`,
+      ),
+    ),
+  );
+
+  const matches = and(
+    // Algún dato con el que cruzar: sin ninguno, el patrón no puede entrar.
+    or(isNotNull(pattern.yarnWeight), isNotNull(total)),
+    or(...perWeight),
+  );
+  if (matches) {
+    conditions.push(matches);
+  }
+
+  return getDb()
+    .select({ ...patternColumns, projectCount: countPublicProjects })
+    .from(pattern)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(...orderByFor(filters.order, query));
 }
 
 export type PatternOption = {

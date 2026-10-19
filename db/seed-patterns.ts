@@ -171,6 +171,8 @@ const PATTERNS: PatternSeed[] = [
     craft: "dos-agujas", // "gorro de punto"
     category: "accesorios",
     difficulty: 2, // "fácil" (etiqueta de la tienda)
+    needleSizes: "4 mm (circulares)",
+    sizes: "M a L",
     sourceUrl:
       "https://www.katia.com/ES/patrones-lanas-estambres-otoño-invierno-mujer-gorro-8044-378.html",
   },
@@ -181,6 +183,11 @@ const PATTERNS: PatternSeed[] = [
     craft: "dos-agujas", // "patrón de punto"
     category: "accesorios",
     difficulty: 2, // "fácil" (está en el propio nombre del patrón)
+    weight: "dk", // Fil Piuma es DK (etiqueta y ficha del ovillo)
+    yardageMin: 400, // 1 ovillo de Fil Piuma alcanza: 150 g · 400 m
+    yardageMax: 400,
+    needleSizes: "8 mm", // las agujas que indica el patrón
+    sizes: "O/S", // talla única
     sourceUrl:
       "https://www.katia.com/ES/patrones-lanas-estambres-otoño-invierno-mujer-bufanda-8044-382.html",
   },

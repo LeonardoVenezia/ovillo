@@ -96,3 +96,14 @@ export const toolUpdateSchema = toolCreateSchema.extend({
 
 export type ToolCreateInput = z.infer<typeof toolCreateSchema>;
 export type ToolUpdateInput = z.infer<typeof toolUpdateSchema>;
+
+/**
+ * Vínculo herramienta ↔ proyecto (`project_tool`, spec §5.3): solo ids; la
+ * pertenencia de ambos se verifica en la acción, nunca en el cliente.
+ */
+export const projectToolLinkSchema = z.object({
+  projectId: z.string().min(1),
+  toolId: z.string().min(1),
+});
+
+export type ProjectToolLinkInput = z.infer<typeof projectToolLinkSchema>;

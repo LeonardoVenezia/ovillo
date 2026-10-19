@@ -240,7 +240,8 @@ test("la propuesta se ve al instante para el público", async ({ browser }) => {
     page.getByTestId("pattern-card").filter({ hasText: PATTERN_NAME }),
   ).toBeVisible();
 
-  // Es el único con metraje cargado, así que el tramo avanzado lo encuentra.
+  // Con el grosor en worsted queda como el único con metraje: el tramo
+  // avanzado lo encuentra.
   await page.getByTestId("pattern-more-filters").click();
   await page.getByTestId("pattern-filter-metraje").selectOption("hasta-400");
   await expect(page.getByTestId("patterns-count")).toHaveText("1 patrón");

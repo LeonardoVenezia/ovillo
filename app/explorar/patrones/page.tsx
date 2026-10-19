@@ -20,7 +20,17 @@ import {
   parseLanguage,
   parseYardageBucket,
 } from "@/features/pattern/params";
-import { listPatterns } from "@/features/pattern/queries";
+import {
+  listPatterns,
+  listPatternsForStash,
+  type PatternListItem,
+} from "@/features/pattern/queries";
+import { listStashItems } from "@/features/stash/queries";
+import {
+  stashStockFromItems,
+  type StashStockEntry,
+} from "@/features/stash/stock";
+import { getOptionalUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
 export const metadata: Metadata = {
@@ -33,7 +43,8 @@ export const metadata: Metadata = {
  * Los filtros viven en la URL, así que el contenido depende de la petición y
  * se arma dentro del límite de `Suspense`: el encabezado (y el botón de
  * sumar un patrón) viajan en el caparazón estático. Los datos salen del
- * caché compartido de `listPatterns`.
+ * caché compartido de `listPatterns`, salvo "Con mi lana" (spec §5.6), que
+ * cruza el inventario de quien mira: dato privado y sin caché.
  */
 
 type Props = PageProps<"/explorar/patrones">;
@@ -82,6 +93,7 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
   const rawLanguage = readParam(params.idioma);
   const rawYardage = readParam(params.metraje);
   const rawOrder = readParam(params.orden);
+  const wantsStash = readParam(params.lana) === "mia";
 
   const current: PatternFilterValues = {
     q: readParam(params.q).slice(0, 80),
@@ -92,9 +104,10 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
     language: parseLanguage(rawLanguage) ?? "",
     yardage: parseYardageBucket(rawYardage) ?? "",
     order: isPatternOrder(rawOrder) ? rawOrder : "",
+    lana: wantsStash ? "mia" : "",
   };
 
-  const patterns = await listPatterns({
+  const filters = {
     q: current.q,
     craft: current.craft,
     category: current.category,
@@ -103,7 +116,24 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
     language: current.language,
     yardage: current.yardage,
     order: current.order,
-  });
+  };
+
+  // La sesión se lee siempre (el chip "Con mi lana" la necesita para saber si
+  // llevar al ingreso); el inventario, solo cuando el filtro está activo.
+  const viewer = await getOptionalUser();
+
+  let stashStock: StashStockEntry[] = [];
+  let patterns: PatternListItem[];
+  if (wantsStash) {
+    if (viewer) {
+      stashStock = stashStockFromItems(await listStashItems(viewer.id));
+      patterns = await listPatternsForStash(stashStock, filters);
+    } else {
+      patterns = [];
+    }
+  } else {
+    patterns = await listPatterns(filters);
+  }
 
   const hasFilters =
     current.q.length > 0 ||
@@ -112,14 +142,20 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
     current.difficulty.length > 0 ||
     current.weight.length > 0 ||
     current.language.length > 0 ||
-    current.yardage.length > 0;
+    current.yardage.length > 0 ||
+    current.lana.length > 0;
 
   return (
     <>
-      <PatternFilters current={current} />
+      <PatternFilters current={current} signedIn={viewer !== null} />
 
       {patterns.length === 0 ? (
-        hasFilters ? (
+        wantsStash ? (
+          <StashEmptyState
+            signedIn={viewer !== null}
+            hasStock={stashStock.length > 0}
+          />
+        ) : hasFilters ? (
           <EmptyState
             icon={BookOpen}
             title={es.patterns.emptyTitle}
@@ -165,6 +201,64 @@ async function PatternsContent({ searchParams }: Pick<Props, "searchParams">) {
         </>
       )}
     </>
+  );
+}
+
+/** Vacíos de "Con mi lana": sin sesión, sin stock o sin cruce posible. */
+function StashEmptyState({
+  signedIn,
+  hasStock,
+}: {
+  signedIn: boolean;
+  hasStock: boolean;
+}) {
+  if (!signedIn) {
+    return (
+      <EmptyState
+        icon={BookOpen}
+        title={es.patterns.stashSignInTitle}
+        body={es.patterns.stashSignInBody}
+        action={
+          <Button asChild>
+            <Link
+              href={`/ingresar?volver=${encodeURIComponent(
+                "/explorar/patrones?lana=mia",
+              )}`}
+            >
+              {es.patterns.stashSignInCta}
+            </Link>
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (!hasStock) {
+    return (
+      <EmptyState
+        icon={BookOpen}
+        title={es.patterns.stashEmptyTitle}
+        body={es.patterns.stashEmptyBody}
+        action={
+          <Button asChild>
+            <Link href="/mi-tejido/lanas">{es.patterns.stashEmptyCta}</Link>
+          </Button>
+        }
+      />
+    );
+  }
+
+  return (
+    <EmptyState
+      icon={BookOpen}
+      title={es.patterns.stashNoMatchTitle}
+      body={es.patterns.stashNoMatchBody}
+      action={
+        <Button asChild>
+          <Link href="/explorar/patrones">{es.patterns.emptyCta}</Link>
+        </Button>
+      }
+    />
   );
 }
 

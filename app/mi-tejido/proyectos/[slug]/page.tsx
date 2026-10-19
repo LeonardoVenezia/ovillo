@@ -22,6 +22,11 @@ import {
 } from "@/features/projects/media-queries";
 import { toEntryViews, toPhotoViews } from "@/features/projects/media-view";
 import { getProjectBySlug } from "@/features/projects/queries";
+import { ProjectYarns } from "@/features/stash/components/project-yarns";
+import { listProjectYarns, listStashItems } from "@/features/stash/queries";
+import { ProjectTools } from "@/features/tools/components/project-tools";
+import { listProjectTools, listTools } from "@/features/tools/queries";
+import { listYarnOptions } from "@/features/yarn/queries";
 import { requireUser } from "@/lib/session";
 import { es } from "@/messages/es";
 
@@ -52,10 +57,24 @@ async function ProjectDetail({ slug }: { slug: string }) {
     notFound();
   }
 
-  const [photos, entries, counters] = await Promise.all([
+  const [
+    photos,
+    entries,
+    counters,
+    yarns,
+    projectTools,
+    stashItems,
+    catalogOptions,
+    toolOptions,
+  ] = await Promise.all([
     listProjectPhotos(project.id),
     listProjectEntries(project.id),
     listProjectCounters(project.id),
+    listProjectYarns(project.id),
+    listProjectTools(project.id),
+    listStashItems(user.id),
+    listYarnOptions(),
+    listTools(user.id),
   ]);
 
   const craftLabel =
@@ -190,6 +209,19 @@ async function ProjectDetail({ slug }: { slug: string }) {
           ))}
         </dl>
       ) : null}
+
+      <ProjectYarns
+        projectId={project.id}
+        yarns={yarns}
+        stashItems={stashItems}
+        catalogOptions={catalogOptions}
+      />
+
+      <ProjectTools
+        projectId={project.id}
+        tools={projectTools}
+        options={toolOptions}
+      />
 
       {project.notes ? (
         <div className="flex flex-col gap-2">

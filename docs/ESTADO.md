@@ -4,7 +4,7 @@
 > **Se lee al empezar cada sesión y se actualiza al cerrar cada tramo** — aunque la fase no haya terminado, incluso a mitad de una tarea.
 > El histórico completo por fase está en `PROGRESS.md`; las decisiones, en `DECISIONS.md`.
 
-Última actualización: **2026-10-18** · Fase 4 (Catálogo) cerrada y verificada; **Fase 5 (Mi tejido, parte 2) en curso: tramo 1 (inventario de lana) hecho y verificado en producción**
+Última actualización: **2026-10-19** · Fase 4 (Catálogo) cerrada y verificada; **Fase 5 (Mi tejido, parte 2) en curso: tramo 2 (lanas y herramientas en los proyectos + "Con mi lana") hecho**
 Producción: <https://ovillo-sepia.vercel.app>
 
 ## Resumen
@@ -12,12 +12,12 @@ Producción: <https://ovillo-sepia.vercel.app>
 - Fases **0 a 3 hechas y cerradas**: base del proyecto, cuentas/perfil, y Mi tejido parte 1 (proyectos, diario, fotos, contador de vueltas y herramientas).
 - **Fase 4 — Catálogo, cerrada**: tramo 1, catálogo de lanas (38 lanas de 9 marcas reales); tramo 2, **biblioteca de patrones** (20 patrones gratuitos reales de Revesderecho, Katia y LHO) con propuestas de la comunidad; y tramo 3, **vínculo proyecto ↔ patrón con las galerías "hechos por la comunidad"** (ficha del patrón y `/explorar/proyectos`) y **pulido del buscador** (orden relevancia/populares/recientes, filtros avanzados de metraje e idioma y chips de filtros activos).
 - El repo quedó **limpio**: todo pusheado a `main`, CI en verde, deploy verificado en producción.
-- **Fase 5 — Mi tejido (parte 2), en curso**: tramo 1 (inventario de lana) **hecho y verificado en producción** —`stash_item` + `project_yarn` en la migración `0009`, `/mi-tejido/lanas` con "disponible = total − asignada" ya calculada, foto opcional, filtros por color/grosor, hub y hoja *Crear*, y 14 lanas demo—. Plan: **2)** lanas en los proyectos (asignar del inventario o del catálogo, devolución al frogear/editar, `project_tool`, galería "Hechos por la comunidad" en la ficha de lana y filtro "Con mi lana"); **3)** Quiero tejer + Guardados y colecciones; **4)** meta anual.
+- **Fase 5 — Mi tejido (parte 2), en curso**: tramo 1 (inventario de lana) **hecho y verificado en producción** (migración `0009`) y tramo 2 (lanas y herramientas en los proyectos, galería "Hechos por la comunidad" en la ficha de lana y filtro "Con mi lana") **hecho** (migración `0010`). Plan: **3)** Quiero tejer + Guardados y colecciones; **4)** meta anual.
 
 ## Próximos pasos (en orden)
 
-1. **Fase 5 — tramo 2: lanas en los proyectos** (spec §5.3): sección "Lanas" en el detalle del proyecto para asignar del inventario (con la disponible en vivo) o del catálogo, con el descuento visible y la devolución al frogear/editar (ya garantizada por `project_yarn`); después, `project_tool`, la galería "Hechos por la comunidad" en la ficha de la lana y el filtro "Con mi lana" en `/explorar/patrones` (asignar acá también invalida los tags de caché de lanas/patrones que correspondan).
-2. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (el tramo 1 usó D-045 y D-046).
+1. **Fase 5 — tramo 3: Quiero tejer + Guardados y colecciones** (spec §5.6/§5.8): "quiero tejer" desde la ficha de un patrón (lista de deseos con nota y prioridad) y guardados/colecciones de patrones y proyectos.
+2. Registrar cada decisión nueva como `D-0xx` en `DECISIONS.md` (el tramo 1 usó D-045 y D-046; el tramo 2, D-047 a D-050).
 3. Al cerrar cada tramo: gates (`pnpm typecheck && pnpm lint && pnpm test`; con e2e y `pnpm build` al cerrar fase), actualizar `ESTADO.md` (este archivo) y `PROGRESS.md`, commit + push en español, y verificar el CI y el deploy (ver "Cómo retomar").
 
 ## Pendientes que dependen del dueño (no frenan el código)
@@ -29,6 +29,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 - [ ] Recorrer el catálogo en producción (`/explorar/lanas`): probar la búsqueda y los filtros, y proponer una lana real desde `/explorar/lanas/proponer` (queda visible al instante, con el cartel de "sin revisar").
 - [ ] Recorrer la biblioteca en producción (`/explorar/patrones`): probar la búsqueda y los filtros, abrir una ficha y ver el botón al patrón original, y sumar un patrón real desde `/explorar/patrones/proponer` (se puede sin confirmar el email; queda "sin revisar").
 - [ ] Recorrer las galerías nuevas: `/explorar/proyectos` (búsqueda, técnica y estado) y una ficha de patrón con proyectos, como `/patrones/malu-hat` (galería "Hechos por la comunidad" y botón "Empezar proyecto"); probar también el orden y los filtros avanzados del buscador de patrones (`/explorar/patrones`: orden populares, "Más filtros" con metraje e idioma).
+- [ ] Recorrer en producción las lanas del proyecto: en el sweater de `/@mariaruiz` ver "Lanas del proyecto" (3 de sus 4 ovillos mostaza, disponible 1), la bufanda con la lana del catálogo y el gorro con la lana de la abuela; probar "Con mi lana" en `/explorar/patrones` con la cuenta demo; y mirar una ficha de lana con galería (`/lanas/katia/fil-piuma`, `/lanas/lanas-stop/olaf`).
 - [ ] Antes de abrir el registro: `pnpm db:seed-demo --clean` (borra las cuentas demo, D-034) + rama de Neon.
 - [ ] Vercel: el deploy normal sale solo con el push a `main`; no hay CLI autenticada en la máquina (solo el dueño puede tocar cosas del panel).
 
@@ -50,7 +51,7 @@ Producción: <https://ovillo-sepia.vercel.app>
 3. Gates del día a día: `pnpm typecheck && pnpm lint && pnpm test`. Para e2e: `pnpm test:e2e`. Al cerrar fase: `pnpm build`.
 4. Probar prefetching/PPR de verdad: build de producción local (`pnpm build && BETTER_AUTH_URL=http://localhost:3200 pnpm start --port 3200`); el e2e corre en dev y no ve esa clase de bugs (D-036).
 5. Si `pnpm` falla instalando `drizzle-orm`: usar `--registry=https://registry.npmjs.org/` (D-011).
-6. Migraciones: siempre `pnpm db:generate` + `pnpm db:migrate` (nunca `drizzle-kit push`). La base compartida ya tiene aplicadas `0000`–`0009`. Los catálogos base se siembran (o actualizan) con `pnpm db:seed-yarns` y `pnpm db:seed-patterns`, y el contenido demo con `pnpm db:seed-demo` (los tres idempotentes; la demo enlaza 3 proyectos a patrones reales y suma 14 lanas de inventario).
+6. Migraciones: siempre `pnpm db:generate` + `pnpm db:migrate` (nunca `drizzle-kit push`). La base compartida ya tiene aplicadas `0000`–`0010`. Los catálogos base se siembran (o actualizan) con `pnpm db:seed-yarns` y `pnpm db:seed-patterns`, y el contenido demo con `pnpm db:seed-demo` (los tres idempotentes; la demo enlaza 3 proyectos a patrones reales, suma 14 lanas de inventario y asigna lanas y herramientas a los proyectos).
 
 ## Últimos hitos (para confirmar que estamos al día)
 

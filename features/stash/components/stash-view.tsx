@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { es } from "@/messages/es";
 
 import { deleteStashItem } from "../actions";
+import { stashAvailability } from "../availability";
 import { colorFamilySwatch } from "../colors";
 import type { StashListItem } from "../queries";
 import { StashForm } from "./stash-form";
@@ -61,47 +62,6 @@ function quantityParts(item: StashListItem): string[] {
     );
   }
   return parts;
-}
-
-function availability(item: StashListItem): { text: string; warn: boolean } {
-  if (item.skeins !== null) {
-    const available = item.skeins - item.assignedSkeins;
-    if (available < 0) {
-      return {
-        text: es.stash.overassigned.replace(
-          "{used}",
-          String(item.assignedSkeins),
-        ),
-        warn: true,
-      };
-    }
-    if (available === 0) {
-      return { text: es.stash.allAssigned, warn: false };
-    }
-    const template =
-      item.skeins === 1
-        ? es.stash.availableSkeinsOne
-        : es.stash.availableSkeins;
-    return {
-      text: template
-        .replace("{available}", String(available))
-        .replace("{total}", String(item.skeins)),
-      warn: false,
-    };
-  }
-  if (item.grams !== null) {
-    const available = item.grams - item.assignedGrams;
-    if (available <= 0) {
-      return { text: es.stash.allAssigned, warn: false };
-    }
-    return {
-      text: es.stash.availableGrams
-        .replace("{available}", String(available))
-        .replace("{total}", String(item.grams)),
-      warn: false,
-    };
-  }
-  return { text: es.stash.noQuantity, warn: false };
 }
 
 export function StashView({
@@ -361,7 +321,7 @@ function StashCard({
     .filter((part): part is string => part !== null)
     .join(" · ");
   const quantities = quantityParts(item);
-  const available = availability(item);
+  const available = stashAvailability(item);
   const assigned = item.assignedSkeins > 0 || item.assignedGrams > 0;
 
   function remove() {

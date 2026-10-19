@@ -14,13 +14,18 @@ import { suggestCatalogAmounts } from "../features/stash/schemas";
 import { deleteObject, putObject } from "../storage";
 import { account, user } from "./auth-schema";
 import { rowCounter } from "./counter-schema";
-import { tool, type ToolKind, type ToolMaterial } from "./tool-schema";
+import {
+  projectTool,
+  tool,
+  type ToolKind,
+  type ToolMaterial,
+} from "./tool-schema";
 import { getDb } from "./index";
 import { image, projectEntry, projectPhoto } from "./media-schema";
 import { profile, type ProfileLink } from "./profile-schema";
 import { pattern } from "./pattern-schema";
 import { project, type ProjectStatus } from "./project-schema";
-import { stashItem, type ColorFamily } from "./stash-schema";
+import { projectYarn, stashItem, type ColorFamily } from "./stash-schema";
 import { yarn, yarnBrand, type YarnWeight } from "./yarn-schema";
 
 /**
@@ -91,6 +96,19 @@ type ProjectSpec = {
   entries?: EntrySpec[];
   /** Contadores de vueltas (spec §5.4) que quedan abiertos en el proyecto. */
   counters?: { name: string; count: number; repeatEvery?: number }[];
+  /** Lanas asignadas (spec §5.3, D-045). */
+  yarns?: ProjectYarnSpec[];
+  /** Herramientas usadas: índices dentro de `tools` de la misma cuenta. */
+  projectTools?: number[];
+};
+
+type ProjectYarnSpec = {
+  /** Índice dentro de `stash` de la misma cuenta: descuenta disponible. */
+  stash?: number;
+  /** `marca/slug` del catálogo: solo referencia, no descuenta (D-045). */
+  yarnSlug?: string;
+  skeinsUsed?: number;
+  gramsUsed?: number;
 };
 
 type UserSpec = {
@@ -311,6 +329,8 @@ const DEMO_USERS: UserSpec[] = [
           { name: "Cuerpo", count: 84, repeatEvery: 6 },
           { name: "Manga izq.", count: 18 },
         ],
+        yarns: [{ stash: 1, skeinsUsed: 3 }],
+        projectTools: [1],
       },
       {
         slug: "bufanda-invierno",
@@ -350,6 +370,9 @@ const DEMO_USERS: UserSpec[] = [
             ],
           },
         ],
+        // Referencia del catálogo: el ovillo del inventario queda disponible
+        // (y la ficha de Fil Piuma muestra su galería, spec §5.6).
+        yarns: [{ yarnSlug: "katia/fil-piuma", skeinsUsed: 1, gramsUsed: 150 }],
       },
       {
         slug: "gorro-rustico",
@@ -375,6 +398,8 @@ const DEMO_USERS: UserSpec[] = [
             body: "Voy por la mitad de la copa. El borde en punto cangrejo queda divino.",
           },
         ],
+        yarns: [{ stash: 4, skeinsUsed: 1 }],
+        projectTools: [6],
       },
       {
         slug: "regalo-sorpresa",
@@ -494,6 +519,8 @@ const DEMO_USERS: UserSpec[] = [
           },
         ],
         counters: [{ name: "Cuadrados", count: 25 }],
+        yarns: [{ stash: 0, skeinsUsed: 1 }],
+        projectTools: [2],
       },
       {
         slug: "amigurumi-sobrina",
@@ -533,6 +560,8 @@ const DEMO_USERS: UserSpec[] = [
             ],
           },
         ],
+        yarns: [{ stash: 1, skeinsUsed: 1 }],
+        projectTools: [0],
       },
       {
         slug: "top-que-no-fue",
@@ -552,6 +581,8 @@ const DEMO_USERS: UserSpec[] = [
             body: "Lo destejí completo. Antes de volver a empezar: muestra de tensión, siempre.",
           },
         ],
+        // Frogueado: no descuenta, la lana ya volvió sola al disponible (D-045).
+        yarns: [{ stash: 2, skeinsUsed: 1 }],
       },
     ],
   },
@@ -668,6 +699,8 @@ const DEMO_USERS: UserSpec[] = [
             ],
           },
         ],
+        yarns: [{ stash: 1, skeinsUsed: 1 }],
+        projectTools: [0],
       },
       {
         slug: "ruana-telar",
@@ -1151,10 +1184,20 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
   let counterCount = 0;
   let toolCount = 0;
   let stashCount = 0;
+  let yarnLinkCount = 0;
+  let toolLinkCount = 0;
 
   try {
+    // Los vínculos lana↔proyecto y herramienta↔proyecto (spec §5.3) van al
+    // final: necesitan los ids de lanas y herramientas. Acá se juntan.
+    const projectIds = new Map<string, string>();
+    const toolIds: string[] = [];
+    /** `null` si una lana se saltea (catálogo incompleto): no corre índices. */
+    const stashIds: (string | null)[] = [];
+
     for (const projectSpec of spec.projects) {
       const projectId = createId();
+      projectIds.set(projectSpec.slug, projectId);
       let patternId: string | null = null;
       if (projectSpec.patternSlug) {
         patternId = patternIds.get(projectSpec.patternSlug) ?? null;
@@ -1255,8 +1298,10 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
 
     for (const toolSpec of spec.tools ?? []) {
       toolCount++;
+      const toolId = createId();
+      toolIds.push(toolId);
       await db.insert(tool).values({
-        id: createId(),
+        id: toolId,
         userId,
         kind: toolSpec.kind,
         sizeMm: toolSpec.sizeMm,
@@ -1282,12 +1327,14 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
           console.warn(
             `  Aviso: no existe la lana "${stashSpec.yarnSlug}" para el inventario (¿corriste pnpm db:seed-yarns?).`,
           );
+          stashIds.push(null);
           continue;
         }
         yarnId = resolved.id;
         catalog = { meters: resolved.meters, grams: resolved.grams };
       } else if (!stashSpec.customName) {
         console.warn("  Aviso: una lana de carga libre quedó sin nombre.");
+        stashIds.push(null);
         continue;
       }
 
@@ -1311,6 +1358,7 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
       }
 
       stashCount++;
+      stashIds.push(stashId);
       await db.insert(stashItem).values({
         id: stashId,
         userId,
@@ -1330,13 +1378,75 @@ async function seedUser(spec: UserSpec, passwordHash: string): Promise<void> {
         updatedAt: createdAt,
       });
     }
+
+    // Lanas y herramientas de cada proyecto (spec §5.3). En el inventario la
+    // lana descuenta disponible (D-045); la herramienta es informativa.
+    for (const projectSpec of spec.projects) {
+      const projectId = projectIds.get(projectSpec.slug);
+      if (!projectId) {
+        continue;
+      }
+
+      for (const yarnSpec of projectSpec.yarns ?? []) {
+        let stashItemId: string | null = null;
+        let yarnId: string | null = null;
+
+        if (yarnSpec.stash !== undefined) {
+          const resolved = stashIds[yarnSpec.stash] ?? null;
+          if (!resolved) {
+            console.warn(
+              `  Aviso: falta la lana #${yarnSpec.stash} de @${spec.username}.`,
+            );
+            continue;
+          }
+          stashItemId = resolved;
+        } else if (yarnSpec.yarnSlug) {
+          const resolved = yarnsByPath.get(yarnSpec.yarnSlug);
+          if (!resolved) {
+            console.warn(
+              `  Aviso: no existe la lana "${yarnSpec.yarnSlug}" para asignar (¿corriste pnpm db:seed-yarns?).`,
+            );
+            continue;
+          }
+          yarnId = resolved.id;
+        } else {
+          continue;
+        }
+
+        yarnLinkCount++;
+        await db.insert(projectYarn).values({
+          id: createId(),
+          projectId,
+          stashItemId,
+          yarnId,
+          skeinsUsed: yarnSpec.skeinsUsed ?? null,
+          gramsUsed: yarnSpec.gramsUsed ?? null,
+        });
+      }
+
+      for (const toolIndex of projectSpec.projectTools ?? []) {
+        const toolId = toolIds[toolIndex];
+        if (!toolId) {
+          console.warn(
+            `  Aviso: falta la herramienta #${toolIndex} de @${spec.username}.`,
+          );
+          continue;
+        }
+        toolLinkCount++;
+        await db.insert(projectTool).values({
+          id: createId(),
+          projectId,
+          toolId,
+        });
+      }
+    }
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
 
   const projectCount = spec.projects.length;
   console.log(
-    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s), ${stashCount} lana(s)`,
+    `  ✓ ${spec.username} — ${projectCount} proyecto(s), ${photoCount} foto(s), ${entryCount} entrada(s), ${counterCount} contador(es), ${toolCount} herramienta(s), ${stashCount} lana(s), ${yarnLinkCount} lana(s) asignada(s), ${toolLinkCount} vínculo(s) de herramienta(s)`,
   );
 }
 

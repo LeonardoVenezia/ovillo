@@ -6,7 +6,9 @@ import { Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { countryName } from "@/features/profile/countries";
+import { YarnCommunityProjects } from "@/features/projects/components/yarn-community";
 import {
   formatComposition,
   formatNeedles,
@@ -21,9 +23,9 @@ import { es } from "@/messages/es";
  * Ficha pública de una lana (spec §5.6, `/lanas/marca/slug`).
  *
  * El proxy ya chequeó que exista (para poder responder 404 de verdad, D-023).
- * Los datos salen del caché compartido del catálogo. La galería "proyectos
- * tejidos con esta lana" se suma cuando el inventario vincule lanas a
- * proyectos (Fase 5).
+ * Los datos salen del caché compartido del catálogo. La galería "hechos por
+ * la comunidad" va aparte, bajo `<Suspense>`: usa la sesión y datos que
+ * cambian seguido, así que no se cachea.
  */
 
 export const instant = false;
@@ -144,6 +146,10 @@ export default async function YarnPage({ params }: Props) {
           </div>
         ) : null}
       </dl>
+
+      <Suspense fallback={<Skeleton className="h-48 w-full rounded-2xl" />}>
+        <YarnCommunityProjects yarnId={data.id} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <OwnerEditLink

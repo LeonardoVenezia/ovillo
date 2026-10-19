@@ -2,7 +2,7 @@
 
 Bitácora de construcción por fases (spec §10: cada fase cierra con tests verdes y una nota acá).
 **Para retomar el trabajo, el estado vivo y el próximo paso están en `ESTADO.md`.**
-Última actualización: 2026-10-18
+Última actualización: 2026-10-19
 
 ## Estado general
 
@@ -11,7 +11,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 2 — Cuenta, auth y perfil (cerrada con pendientes diferidos a propósito)
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
 - [x] Fase 4 — Catálogo (lanas y patrones) — cerrada (tramos 1–3: lanas, patrones, galerías y pulido de búsqueda)
-- [ ] Fase 5 — Mi tejido (parte 2) — en curso (tramo 1 hecho: inventario de lana)
+- [ ] Fase 5 — Mi tejido (parte 2) — en curso (tramos 1–2 hechos: inventario de lana y lanas/herramientas en los proyectos)
 - [ ] Fase 6 — Comunidad
 - [ ] Fase 7 — Social y notificaciones
 - [ ] Fase 8 — Moderación, pulido y lanzamiento
@@ -174,7 +174,7 @@ Cierre de la fase: commit `e53d4dc` (+ docs del estado), CI en verde y deploy ve
 
 ## Fase 5 — Mi tejido (parte 2) (2026-10-18 → )
 
-Tramos: 1) **inventario de lana** (hecho) · 2) **lanas en los proyectos + "con mi lana"** · 3) **Quiero tejer + Guardados y colecciones** · 4) **meta anual**.
+Tramos: 1) **inventario de lana** (hecho) · 2) **lanas en los proyectos + "con mi lana"** (hecho) · 3) **Quiero tejer + Guardados y colecciones** · 4) **meta anual**.
 
 Hecho (inventario de lana, tramo 1):
 - **Modelo** (spec §5.7/§6, migración `0009`): `stash_item` (lana del catálogo o carga libre, color, lote, ovillos/gramos/metros, ubicación, notas, visibilidad privada y foto opcional) y `project_yarn` (lana usada por proyecto: del inventario o del catálogo, en ovillos y/o gramos). La **cantidad disponible = total − asignada** se calcula al leer (proyectos activos), nunca se guarda ni se muta: por eso frogear o editar un proyecto devuelve la cantidad solo (criterio de aceptación de §5.7; la interfaz de asignación llega en el tramo 2). Ver D-045.
@@ -185,6 +185,14 @@ Hecho (inventario de lana, tramo 1):
 - **Calidad**: **160 tests** unitarios (13 nuevos: parser de cantidades con punto de miles, contrato de carga libre vs. catálogo, topes y el cálculo de gramos/metros desde la etiqueta) + **63 e2e** en verde — 8 nuevos (registro, vacío con la hoja *Crear*, alta de carga libre con color/grosor/ubicación, alta del catálogo con metros sugeridos y foto real en R2, filtros combinados, edición y quitar foto, borrado, resumen del hub y privacidad). Build verde.
 - **Producción**: commit `eba93a5`, CI en verde y deploy verificado con la cuenta demo — hub con "Tenés 5 lanas guardadas en el inventario, 10 ovillos en total", `/mi-tejido/lanas` con las 5 lanas demo (Fil Piuma "Verde agua" con "Disponible: 1 de 1 ovillo", la carga libre "Lana de mi abuela" con ubicación y notas), la foto propia servida desde R2 (`…/lanas/…-thumb.jpg`), el formulario abierto con `?nueva=1` ("Del catálogo"/"Carga libre", "¿Cuánta tenés?") y las rutas privadas redirigiendo con la vuelta.
 
-Pendientes del tramo (no frenan; siguen):
-- [ ] Asignar lanas del inventario a los proyectos con descuento y devolución (`project_yarn`): tramo 2.
-- [ ] Galería "hechos por la comunidad" en la ficha de la lana y filtro "Con mi lana" en patrones: tramo 2.
+Hecho (lanas y herramientas en los proyectos + "Con mi lana", tramo 2):
+- **Lanas del proyecto** (`/mi-tejido/proyectos/[slug]`, spec §5.3): sección "Lanas del proyecto" para sumar lanas al proyecto desde el inventario (descuenta disponible, D-045) o desde el catálogo (solo referencia: "usé tal lana"), con la cantidad en ovillos y/o gramos, corrección en su lugar (sin quitar y volver a poner) y borrado en dos pasos. La fila muestra el origen ("Del inventario"/"Del catálogo"), lo usado y el disponible recalculado ("Disponible: 1 de 2 ovillos", "Todo asignado a proyectos" o el aviso ámbar "Asignaste más de lo que tenés: 3 ovillos en proyectos"); la misma lana no se puede sumar dos veces al mismo proyecto. Al frogear o editar el proyecto la lana vuelve sola: el disponible nunca se guarda (D-047).
+- **Herramientas del proyecto**: sección "Agujas y ganchos" con las herramientas del inventario (de la más fina a la más gruesa, con las equivalencias en la etiqueta y el cable en las circulares), informativas: no descuentan nada y la misma sirve para varios proyectos (D-048). `project_tool` entra con la migración `0010`, aplicada a la base compartida.
+- **"Con mi lana"** en el buscador de patrones (`/explorar/patrones?lana=mia`, spec §5.6): chip en los filtros que cruza los patrones con datos (grosor y/o metraje) contra el stock disponible del inventario, agrupado por grosor; los metros disponibles se estiman proporcionales a lo asignado (`features/stash/stock.ts`). Solo con sesión: sin sesión el chip lleva a ingresar y vuelve al filtro; con sesión y sin stock (o sin cruce), los vacíos explican qué falta (D-049).
+- **Galería "Hechos por la comunidad" en la ficha de lana** (spec §5.6): proyectos públicos que usan la lana desde el inventario o como referencia del catálogo, más los propios con sesión (los privados se marcan); terminados primero y sin duplicar si hay dos asignaciones de la misma lana (D-050).
+- **Datos demo**: los proyectos demo asignan lanas reales del inventario (el sweater de María descuenta 3 de sus 4 ovillos mostaza, el gorro usa 1 de la lana de la abuela, la manta de Candela 1 de 3 olaf, el amigurumi 1 de 2 algodones, el chal de encaje 1 de la merino seda; la bufanda terminada referencia Fil Piuma del catálogo —el ovillo del inventario queda libre y la ficha gana galería—; el top frogueado demuestra que lo frogueado no descuenta) y 1–2 herramientas por proyecto en las cuentas que las tienen. La siembra de patrones suma su primer cruce verificable: "Bufanda fácil en Fil Piuma" (Katia) con grosor DK, metraje 400 m, agujas de 8 mm y talla única, y el gorro Beanie Oso con agujas (4 mm circulares) y tallas, todo leído de la ficha oficial.
+- **Calidad**: **168 tests** unitarios (8 nuevos: stock por grosor, proporción de metros y lanas omitidas) + **70 e2e** en verde — 7 nuevos (inventario con lana del catálogo y carga libre sin metros, herramienta, lana y herramienta asignadas al proyecto con el descuento verificado, galería en la ficha de la lana sin sesión, "Con mi lana" que cruza / se vacía / avisa el exceso / vuelve al quitar, y el chip sin sesión que lleva al ingreso y regresa al filtro).
+
+Pendientes de la fase (no frenan; siguen):
+- [ ] Tramo 3: **Quiero tejer** y **Guardados y colecciones** (spec §5.6/§5.8).
+- [ ] Tramo 4: **meta anual** (spec §5.4).
