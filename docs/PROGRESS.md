@@ -12,7 +12,7 @@ Bitácora de construcción por fases (spec §10: cada fase cierra con tests verd
 - [x] Fase 3 — Mi tejido (parte 1) — cerrada (proyectos, diario, fotos, contador y herramientas)
 - [x] Fase 4 — Catálogo (lanas y patrones) — cerrada (tramos 1–3: lanas, patrones, galerías y pulido de búsqueda)
 - [x] Fase 5 — Mi tejido (parte 2) — cerrada (tramos 1–4: inventario de lana, lanas/herramientas en los proyectos, Quiero tejer + Guardados y Meta anual "Mi año tejiendo")
-- [ ] Fase 6 — Comunidad — en curso (tramo 1 hecho: grupos y membresía)
+- [ ] Fase 6 — Comunidad — en curso (tramos 1 y 2 hechos: grupos y membresía, hilos y respuestas; sigue KAL/CAL y glosario)
 - [ ] Fase 7 — Social y notificaciones
 - [ ] Fase 8 — Moderación, pulido y lanzamiento
 
