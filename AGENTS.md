@@ -15,6 +15,7 @@ Spanish-language knitting/crochet community ("Ravelry, but simpler, modern and m
 ## Source of truth
 
 - `docs/SPEC.md` — full product spec (data model, routes, design tokens, 8-phase plan). Read the relevant section before building something new. Do not edit it.
+- `docs/VISION.md` — el "por qué" del proyecto en idioma humano (idea, valor y los flujos completos esperados al final de la v1). Read it to understand the product; keep it current when the end-state flows change.
 - `docs/ESTADO.md` — live snapshot (where we are, what's next, owner pendings). **Read it first and update it every time work stops or a piece of work finishes**, even mid-phase: it is what makes the project resumable from any fresh session.
 - `docs/PROGRESS.md` — phase checklist and history. Update it at the end of every work session.
 - `docs/DECISIONS.md` — technical decision log. When facing ambiguity, decide and record it there instead of stopping to ask, unless money or data deletion is involved.
